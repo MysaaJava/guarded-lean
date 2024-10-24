@@ -99,6 +99,46 @@ def F : ToT ⥤ ToposOfTrees := {
   }
 }
 
+-- TODO extract proof of X.set = Y.set ∧ X.restrict = Y.restrict => X = Y
+lemma ToT.iterRestrictNatMapping (X : ToposOfTrees) (n k m : ℕ) (eq : m + k = n)
+    (f : Opposite.op n ⟶ Opposite.op m) (x : X.obj (Opposite.op n))
+  : (F.obj (G.obj X)).map f x = X.map f x := by {
+
+    induction k generalizing n m with
+    | zero =>
+      simp at eq
+      subst eq
+      unfold F G
+      simp
+      rw [ToT.iterRestrictZero]
+      simp
+      have ef : f = (𝟙 (Opposite.op m)) := by rfl
+      rw [ef, X.map_id]
+      simp
+    | succ k₀ hk =>
+      subst eq
+      have f₀ : Opposite.op (m + k₀) ⟶ Opposite.op m := makeOpArrow (by omega)
+      have f₁ : Opposite.op (m + (k₀ + 1)) ⟶ Opposite.op (m + k₀) := makeOpArrow (by omega)
+      have ef : f = f₁ ≫ f₀ := by congr --Both sides are hidden props
+      rw [ef,X.map_comp]
+      simp
+      rw [<- hk _ _ rfl]
+      apply congrArg
+
+      unfold F G
+      simp
+      have e' : ({ set := fun n => X.obj (Opposite.op n), restrict := fun n => X.map (makeOpArrow (by omega)) }
+        : ToT).iterRestrict (m + k₀) (m + (k₀ + 1) - (m + k₀)) (m + (k₀ + 1)) (by omega) x =
+        ({ set := fun n => X.obj (Opposite.op n), restrict := fun n => X.map (makeOpArrow (by omega)) }
+        : ToT).iterRestrict (m + k₀) 1 (m + (k₀ + 1)) (by omega) x := by {congr;omega}
+      rw [e']
+      unfold ToT.iterRestrict
+      simp
+      rw [ToT.iterRestrictZero]
+      simp
+      congr
+}
+
 def TTooTTequivalence : ToT ≌ ToposOfTrees := {
   functor := F
   inverse := G
@@ -118,15 +158,49 @@ def TTooTTequivalence : ToT ≌ ToposOfTrees := {
       }
     }
     inv := {
-      app := sorry
+      app := λ X => {
+        setMorph := λ n x => x
+        restrictMorph := λ n => by {
+          funext x
+          simp
+          unfold F G
+          simp
+          unfold ToT.iterRestrict
+          simp
+          rw [ToT.iterRestrictZero]
+        }
+      }
     }
   }
   counitIso := {
-    hom := sorry
-    inv := sorry
+    hom := {
+      app := λ X => {
+        app := λ n x => x
+        naturality := λ n m f => by {
+          funext x
+          simp
+          rw [ToT.iterRestrictNatMapping X _ (Opposite.unop n-Opposite.unop m)]
+          apply unmakeOpArrow at f
+          omega
+        }
+      }
+    }
+    inv := {
+      app := λ X => {
+        app := λ n x => x
+        naturality := λ n m f => by {
+          funext x
+          simp
+          rw [ToT.iterRestrictNatMapping X _ (Opposite.unop n - Opposite.unop m)]
+          apply unmakeOpArrow at f
+          omega
+        }
+      }
+    }
   }
   functor_unitIso_comp := by {
+    intro X
     simp
-    sorry
+    congr
   }
 }
