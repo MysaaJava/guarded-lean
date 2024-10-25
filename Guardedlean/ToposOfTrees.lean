@@ -9,20 +9,52 @@ import Mathlib.CategoryTheory.Limits.Shapes.FiniteProducts
 import Mathlib.CategoryTheory.Limits.Shapes.Terminal
 import Guardedlean.ToT
 import Guardedlean.Lemmas
+import Guardedlean.Categories
 
 open CategoryTheory
 
 namespace Guardedlean
 
 
-
+/--- Topos of Trees---/
 abbrev ToposOfTrees := ℕᵒᵖ ⥤ Type
 
-/- A representation of an object in the topos of trees that is simpler
-   than matlib's. -/
+-- Equality in the Topos of Tree only has to be checked on arrow of size 1
+lemma ToposOfTrees.extentionality (X Y : ToposOfTrees) (eObj : ∀ n, X.obj n = Y.obj n)
+    (eMap : ∀ n (e : Opposite.op (n+1) ⟶ Opposite.op n),
+     X.map e = (eObj (Opposite.op n)) ▸ (eObj (Opposite.op (n+1))) ▸ (Y.map e)) : X = Y := by {
+    match X,Y with | {obj := Xobj, map := Xmap,map_id := Xid,map_comp := Xcomp},
+                     {obj := Yobj, map := Ymap,map_id := Yid,map_comp := Ycomp} => {
+      have e := funext eObj
+      simp at e
+      cases e
+      congr
+      simp at eMap Xcomp Ycomp Xid Yid
+      funext (Opposite.op n) (Opposite.op m) (Opposite.op f) x
+      simp at f
+      apply ℕ.catInduction (λ a b g => ∀ x, Xmap (Opposite.op g) x = Ymap (Opposite.op g) x)
+      clear n m f x
+      intros n x
+      have eid : Opposite.op (𝟙 n) = 𝟙 (Opposite.op n) := by rfl
+      rw [eid, Xid, Yid]
+      simp
+      clear n m f x
+      intros n f x
+      rw [eMap]
+      clear n m f x
+      intros n k m f g e₁ e₂ x
+      have efg : Opposite.op (f ≫ g) = (@CategoryStruct.comp _ _ (Opposite.op m) (Opposite.op k) (Opposite.op n) (Opposite.op g) (Opposite.op f)) := by rfl
+      rw [efg]
+      rw [Xcomp,Ycomp]
+      simp
+      rw [e₁,e₂]
+    }
+  }
 
 
-def G : ToposOfTrees ⥤ ToT where
+/--- Equivalence between ToT and ToposOfTrees ---/
+
+private def G : ToposOfTrees ⥤ ToT where
   obj X := {
     set := λ n => X.obj (Opposite.op n),
     restrict := λ n => X.map (makeOpArrow (Nat.le_add_right n 1))
@@ -37,31 +69,7 @@ def G : ToposOfTrees ⥤ ToT where
     }
   }
 
-theorem ToTMorphism.restrictMorphLift {X Y : ToT} (η : X ⟶ Y) : ∀ n k m, (eq : n + k = m) →
-    (Y.iterRestrict n k m eq) ∘ (η.setMorph m) = (η.setMorph n) ∘ (X.iterRestrict n k m eq) := by {
-      intro n
-      intro k
-      induction k generalizing n with
-      | zero =>
-        intro m eq
-        funext x
-        simp
-        rw [ToT.iterRestrictZero,ToT.iterRestrictZero]
-        subst eq
-        rfl
-      | succ k hk =>
-          intro m eq
-          funext x
-          simp [ToT.iterRestrict]
-          rw [compDefExt (η.setMorph n)]
-          rw [<-η.restrictMorph]
-          simp
-          congr
-          rw [compDefExt (Y.iterRestrict (n+1) k m _),compDefExt (η.setMorph (n+1))]
-          rw [hk]
-    }
-
-def F : ToT ⥤ ToposOfTrees := {
+private def F : ToT ⥤ ToposOfTrees := {
   obj := λ o => {
     map := λ {n m} f x =>
       have eq : m.unop + (n.unop - m.unop) = n.unop := by
@@ -97,46 +105,6 @@ def F : ToT ⥤ ToposOfTrees := {
       simp
     }
   }
-}
-
--- TODO extract proof of X.set = Y.set ∧ X.restrict = Y.restrict => X = Y
-lemma ToT.iterRestrictNatMapping (X : ToposOfTrees) (n k m : ℕ) (eq : m + k = n)
-    (f : Opposite.op n ⟶ Opposite.op m) (x : X.obj (Opposite.op n))
-  : (F.obj (G.obj X)).map f x = X.map f x := by {
-
-    induction k generalizing n m with
-    | zero =>
-      simp at eq
-      subst eq
-      unfold F G
-      simp
-      rw [ToT.iterRestrictZero]
-      simp
-      have ef : f = (𝟙 (Opposite.op m)) := by rfl
-      rw [ef, X.map_id]
-      simp
-    | succ k₀ hk =>
-      subst eq
-      have f₀ : Opposite.op (m + k₀) ⟶ Opposite.op m := makeOpArrow (by omega)
-      have f₁ : Opposite.op (m + (k₀ + 1)) ⟶ Opposite.op (m + k₀) := makeOpArrow (by omega)
-      have ef : f = f₁ ≫ f₀ := by congr --Both sides are hidden props
-      rw [ef,X.map_comp]
-      simp
-      rw [<- hk _ _ rfl]
-      apply congrArg
-
-      unfold F G
-      simp
-      have e' : ({ set := fun n => X.obj (Opposite.op n), restrict := fun n => X.map (makeOpArrow (by omega)) }
-        : ToT).iterRestrict (m + k₀) (m + (k₀ + 1) - (m + k₀)) (m + (k₀ + 1)) (by omega) x =
-        ({ set := fun n => X.obj (Opposite.op n), restrict := fun n => X.map (makeOpArrow (by omega)) }
-        : ToT).iterRestrict (m + k₀) 1 (m + (k₀ + 1)) (by omega) x := by {congr;omega}
-      rw [e']
-      unfold ToT.iterRestrict
-      simp
-      rw [ToT.iterRestrictZero]
-      simp
-      congr
 }
 
 def TTooTTequivalence : ToT ≌ ToposOfTrees := {
@@ -177,23 +145,28 @@ def TTooTTequivalence : ToT ≌ ToposOfTrees := {
       app := λ X => {
         app := λ n x => x
         naturality := λ n m f => by {
+          simp
           funext x
           simp
-          rw [ToT.iterRestrictNatMapping X _ (Opposite.unop n-Opposite.unop m)]
-          apply unmakeOpArrow at f
-          omega
+          have ext := ToposOfTrees.extentionality (F.obj (G.obj X)) X (λn=>by rfl) (λn f => by funext x;unfold F G;simp;unfold ToT.iterRestrict;simp;rw [ToT.iterRestrictZero];congr)
+          have applied := @Eq.rec _ (F.obj (G.obj X)) (fun Y (e : F.obj (G.obj X) = Y) => (F.obj (G.obj X)).map f x = cast (congrArg (fun ξ => ξ.obj m) (Eq.symm e)) (Y.map f (cast (congrArg (fun ξ => ξ.obj n) e) x))) (by rfl) _ ext
+          rw [applied]
+          simp
         }
       }
     }
+    --TODO merge with object and proof above ?
     inv := {
       app := λ X => {
         app := λ n x => x
         naturality := λ n m f => by {
+          simp
           funext x
           simp
-          rw [ToT.iterRestrictNatMapping X _ (Opposite.unop n - Opposite.unop m)]
-          apply unmakeOpArrow at f
-          omega
+          have ext := ToposOfTrees.extentionality (F.obj (G.obj X)) X (λn=>by rfl) (λn f => by funext x;unfold F G;simp;unfold ToT.iterRestrict;simp;rw [ToT.iterRestrictZero];congr)
+          have applied := @Eq.rec _ (F.obj (G.obj X)) (fun Y (e : F.obj (G.obj X) = Y) => (F.obj (G.obj X)).map f x = cast (congrArg (fun ξ => ξ.obj m) (Eq.symm e)) (Y.map f (cast (congrArg (fun ξ => ξ.obj n) e) x))) (by rfl) _ ext
+          rw [applied]
+          simp
         }
       }
     }

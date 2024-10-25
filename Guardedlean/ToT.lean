@@ -60,3 +60,27 @@ def ToT.iterRestrictComp (o : ToT) (n m p k q : ℕ) (e₁ : n + k = m) (e₂ : 
       unfold ToT.iterRestrict
       simp
       rw [hr]
+
+theorem ToTMorphism.restrictMorphLift {X Y : ToT} (η : X ⟶ Y) : ∀ n k m, (eq : n + k = m) →
+    (Y.iterRestrict n k m eq) ∘ (η.setMorph m) = (η.setMorph n) ∘ (X.iterRestrict n k m eq) := by {
+      intro n
+      intro k
+      induction k generalizing n with
+      | zero =>
+        intro m eq
+        funext x
+        simp
+        rw [ToT.iterRestrictZero,ToT.iterRestrictZero]
+        subst eq
+        rfl
+      | succ k hk =>
+          intro m eq
+          funext x
+          simp [ToT.iterRestrict]
+          rw [compDefExt (η.setMorph n)]
+          rw [<-η.restrictMorph]
+          simp
+          congr
+          rw [compDefExt (Y.iterRestrict (n+1) k m _),compDefExt (η.setMorph (n+1))]
+          rw [hk]
+    }
