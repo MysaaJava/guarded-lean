@@ -37,7 +37,7 @@ lemma ToposOfTrees.extentionality (X Y : ToposOfTrees) (eObj : ∀ n, X.obj n = 
       intros n x
       have eid : Opposite.op (𝟙 n) = 𝟙 (Opposite.op n) := by rfl
       rw [eid, Xid, Yid]
-      simp
+      simp only
       clear n m f x
       intros n f x
       rw [eMap]
@@ -46,8 +46,7 @@ lemma ToposOfTrees.extentionality (X Y : ToposOfTrees) (eObj : ∀ n, X.obj n = 
       have efg : Opposite.op (f ≫ g) = (@CategoryStruct.comp _ _ (Opposite.op m) (Opposite.op k) (Opposite.op n) (Opposite.op g) (Opposite.op f)) := by rfl
       rw [efg]
       rw [Xcomp,Ycomp]
-      simp
-      rw [e₁,e₂]
+      simp_all only [implies_true, types_comp_apply]
     }
   }
 

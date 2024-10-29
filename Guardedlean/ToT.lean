@@ -105,93 +105,119 @@ def ToT.toOne (X : ToT) : ToTMorphism X ToT.one := {
   }
 }
 
-private lemma ToT_hasTerminal : CategoryTheory.Limits.HasTerminal ToT := by {
-  have e : ∀ (Y : ToT), Nonempty (Y ⟶ ToT.one) := λ Y => Nonempty.intro (ToT.toOne Y)
-  have f : ∀ (Y : ToT), Subsingleton (Y ⟶ ToT.one) := by {
-    intro Y
-    apply Subsingleton.intro
-    intro a b
-    match a,b with | {setMorph:=as,restrictMorph:=_},{setMorph:=bs,restrictMorph:=_} => {
-      congr
-      apply funext
-      intro n
-      apply funext
-      intro x
-      cases (as n x)
-      cases (bs n x)
-      rfl
+private def ToT_terminal : CategoryTheory.Limits.LimitCone (CategoryTheory.Functor.empty ToT) := {
+  cone := {
+    pt := ToT.one,
+    π := ⟨λ X => (match X with | {as := Xa} => Xa.rec),by {simp}⟩
+  },
+  isLimit := {
+    lift := λ s => ToT.toOne s.pt,
+    fac := λ s X => match X with | {as := Xa} => Xa.rec,
+    uniq := λ s f e => by {
+      match f with | {setMorph := fs, restrictMorph := _} => {
+        congr
+      }
     }
-
   }
-  apply CategoryTheory.Limits.hasTerminal_of_unique ToT.one
 }
 
 def ToT_prod (A B : ToT) : ToT where
   set := fun n => (A.set n) × (B.set n)
   restrict := fun n x => (A.restrict n (Prod.fst x), B.restrict n (Prod.snd x))
 
-instance (X Y : ToT) : Limits.HasLimit (CategoryTheory.Limits.pair X Y) where
-  exists_limit := Nonempty.intro {
-    cone := {
-      pt := ToT_prod X Y,
-      π := {
-        app := λ a => match a with
-        | {as:=.left} => {
-          setMorph := λ n x => Prod.fst x
-          restrictMorph := λ n => funext (λ x => rfl)
-        }
-        | {as:=.right} => {
-          setMorph := λ n x => Prod.snd x
-          restrictMorph := λ n => funext (λ x => rfl)
-        },
-        naturality := λ a b f => by {
-          simp
-          match f with | .up (.up x) => {
-          have e : a = b := by {cases a;cases b;simp at x;simp;apply x}
-          subst e
-          rfl
-          }
+private def ToT_2prod (X Y : ToT) : Limits.LimitCone (CategoryTheory.Limits.pair X Y) := {
+  cone := {
+    pt := ToT_prod X Y,
+    π := {
+      app := λ a => match a with
+      | {as:=.left} => {
+        setMorph := λ n x => Prod.fst x
+        restrictMorph := λ n => funext (λ x => rfl)
+      }
+      | {as:=.right} => {
+        setMorph := λ n x => Prod.snd x
+        restrictMorph := λ n => funext (λ x => rfl)
+      },
+      naturality := λ a b f => by {
+        simp
+        match f with | .up (.up x) => {
+        have e : a = b := by {cases a;cases b;simp at x;simp;apply x}
+        subst e
+        rfl
         }
       }
+    }
+  },
+  isLimit := {
+    lift := λ s =>
+      let π₁ := (s.π.app {as := Limits.WalkingPair.left})
+      let π₂ := (s.π.app {as := Limits.WalkingPair.right})
+    {
+        setMorph := λ n x => Prod.mk (π₁.setMorph n x) (π₂.setMorph n x),
+        restrictMorph := by {
+          intro n;simp;funext x;simp
+          unfold ToT_prod;simp;
+          exact And.intro
+            (congrFun (π₁.restrictMorph n) x)
+            (congrFun (π₂.restrictMorph n) x)
+        }
     },
-    isLimit := {
-      lift := λ s =>
-        let π₁ := (s.π.app {as := Limits.WalkingPair.left})
-        let π₂ := (s.π.app {as := Limits.WalkingPair.right})
-      {
-          setMorph := λ n x => Prod.mk (π₁.setMorph n x) (π₂.setMorph n x),
-          restrictMorph := by {
-            intro n;simp;funext x;simp
-            unfold ToT_prod;simp;
-            exact And.intro
-             (congrFun (π₁.restrictMorph n) x)
-             (congrFun (π₂.restrictMorph n) x)
-          }
+    fac := λ s =>
+      by {
+        intro j
+        match j with | {as := jj} => {
+          cases jj
+          rfl
+          rfl
+        }
       },
-      fac := λ s =>
-        by {
-          intro j
-          match j with | {as := jj} => {
-            cases jj
-            rfl
-            rfl
-          }
-        },
-      uniq := λ s m e => by {
-        simp
-        apply ToTMorphism.extentionnality
-        simp
-        funext n x
-        have e₁ := e {as := Limits.WalkingPair.left}
-        have e₂ := e {as := Limits.WalkingPair.right}
-        clear e;simp at e₁ e₂
-        rw [<-e₁,<-e₂]
-        unfold CategoryStruct.comp Category.toCategoryStruct instCategoryToT
-        rfl
+    uniq := λ s m e => by {
+      simp
+      apply ToTMorphism.extentionnality
+      simp
+      funext n x
+      have e₁ := e {as := Limits.WalkingPair.left}
+      have e₂ := e {as := Limits.WalkingPair.right}
+      clear e;simp at e₁ e₂
+      rw [<-e₁,<-e₂]
+      unfold CategoryStruct.comp Category.toCategoryStruct instCategoryToT
+      rfl
+    }
+  }
+}
+
+def ToT.cut (A : ToT) (n : ℕ) : ToT where
+  set m := PProd (m ≤ n) (A.set m)
+  restrict m x := match x with | ⟨h,x₀⟩ => ⟨Nat.le_of_succ_le h, A.restrict m x₀⟩
+
+private def ToT.exp (X : ToT) : ToT ⥤ ToT where
+  obj Y := {
+    set := λ n => ToTMorphism (Y.cut n) X
+    restrict := λ n f => {
+      setMorph := λ m y => match y with | ⟨h,y₀⟩ => f.setMorph m ⟨by omega,y₀⟩
+      restrictMorph := λ m => by {
+        funext x
+        simp only [Function.comp_apply]
+        simp[ToT.cut]
+        obtain ⟨e,x₀⟩ := x
+        simp only
+        exact congrFun (f.restrictMorph m) ⟨by omega,x₀⟩
       }
     }
   }
+  map := _
+  map_id := _
+  map_comp := _
+--instance : MonoidalCategory ToT := CategoryTheory.monoidalOfChosenFiniteProducts ToT_terminal ToT_2prod
 
-private lemma ToT_hasBinaryProduct : CategoryTheory.Limits.HasBinaryProducts ToT := by {
-    apply CategoryTheory.Limits.hasBinaryProducts_of_hasLimit_pair
-}
+instance : Limits.HasFiniteProducts ToT where
+  out := sorry
+
+private def ToT_Exponential (X : ToT) : Exponentiable X where
+  rightAdj := _
+  adj := _
+
+
+
+
+instance : CartesianClosed ToT := CartesianClosed.mk _ (λ X => )
