@@ -37,6 +37,12 @@ instance : Category ToT where
     }
   }
 
+@[simp]
+lemma ToT.unfoldId (X : ToT) (n : ℕ) (x : X.set n) : (CategoryStruct.id X).setMorph n x = x := by rfl
+@[simp]
+lemma ToT.unfoldComp (X Y Z : ToT) (f : X ⟶ Y) (g : Y ⟶ Z) (n : ℕ) (x : X.set n):
+  (f ≫ g).setMorph n x = g.setMorph n (f.setMorph n x) := by rfl
+
 def ToT.iterRestrict (o : ToT) (n k m : ℕ) (e : n + k = m) (x : o.set m) : o.set n := match k with
   | 0 =>
     have e' : n = m := e
@@ -192,7 +198,7 @@ def ToT.cut (A : ToT) (n : ℕ) : ToT where
 
 private def ToT.exp (X : ToT) : ToT ⥤ ToT where
   obj Y := {
-    set := λ n => ToTMorphism (Y.cut n) X
+    set := λ n => ToTMorphism (X.cut n) Y
     restrict := λ n f => {
       setMorph := λ m y => match y with | ⟨h,y₀⟩ => f.setMorph m ⟨by omega,y₀⟩
       restrictMorph := λ m => by {
@@ -205,19 +211,160 @@ private def ToT.exp (X : ToT) : ToT ⥤ ToT where
       }
     }
   }
-  map := _
-  map_id := _
-  map_comp := _
---instance : MonoidalCategory ToT := CategoryTheory.monoidalOfChosenFiniteProducts ToT_terminal ToT_2prod
+  map {A B} f := {
+    setMorph := λ n g => {
+      setMorph := λ m x =>f.setMorph m (g.setMorph m x)
+      restrictMorph := by {
+        intro m
+        funext x
+        obtain ⟨e,x₀⟩ := x
+        have e' := congrFun (g.restrictMorph m) ⟨e,x₀⟩
+        have e'' := congrFun (f.restrictMorph m) (g.setMorph (m + 1) ⟨e, x₀⟩)
+        simp_all only [Function.comp_apply]
+      }
+    }
+    restrictMorph := by {
+      intro n
+      funext g
+      simp only [Int.reduceNeg, id_eq, Int.Nat.cast_ofNat_Int, Function.comp_apply,
+        ToTMorphism.mk.injEq]
+      funext m
+      funext x
+      obtain ⟨e,x₀⟩ := x
+      simp only
+    }
+  }
+  map_id A := by congr
+  map_comp {A B C} f g := by congr
 
-instance : Limits.HasFiniteProducts ToT where
-  out := sorry
+@[simp]
+lemma expIterRestrict (A X : ToT) (n k m p : ℕ) (e : n + k = m) (e' : p ≤ n) (f : (X.exp.obj A).set m) (x : X.set p) :
+  ((X.exp.obj A).iterRestrict n k m e f).setMorph p ⟨e',x⟩ = f.setMorph p ⟨by omega,x⟩ := by {
+    induction k generalizing n m p
+    case zero =>
+      subst e
+      simp only [Nat.add_zero]
+      rw [ToT.iterRestrictZero]
+    case succ k₀ hr =>
+      unfold ToT.iterRestrict
+      simp only
+      delta ToT.exp
+      simp only [Int.reduceNeg, id_eq, Int.Nat.cast_ofNat_Int, Function.comp_apply]
+      apply hr
+  }
 
-private def ToT_Exponential (X : ToT) : Exponentiable X where
-  rightAdj := _
-  adj := _
+instance : MonoidalCategory ToT := CategoryTheory.monoidalOfChosenFiniteProducts ToT_terminal ToT_2prod
+
+@[simp]
+lemma prodRestrict (A B : ToT) (n : ℕ) (x : A.set (n+1) × B.set (n+1)) :
+ (MonoidalCategory.tensorObj A B).restrict n x = (A.restrict n (Prod.fst x), B.restrict n (Prod.snd x)) := by rfl
+
+@[simp]
+lemma whiskerMorph (X A B : ToT) (f : A ⟶ B) (m : ℕ) (x : X.set m) (a : A.set m):
+  (MonoidalCategory.whiskerLeft X f).setMorph m (x,a) = (x,f.setMorph m a) := by rfl
+
+instance : MonoidalClosed ToT where
+  closed X := {
+    rightAdj := ToT.exp X
+    adj := {
+      unit := {
+        app := λ Y => {
+          setMorph := λ n y => {
+            setMorph := λ m x => match x with | ⟨e,x₀⟩ => (x₀,Y.iterRestrict m (n-m) n (by omega) y)
+            restrictMorph := by {
+              intro m
+              funext y
+              obtain ⟨e,y₀⟩ := y
+              simp only [MonoidalCategory.tensorLeft_obj, Function.comp_apply]
+              unfold ToT.cut
+              simp only [prodRestrict]
+              apply congrArg (fun ξ => (X.restrict m y₀,ξ))
+              calc
+                Y.restrict m (Y.iterRestrict (m + 1) (n - (m + 1)) n _ y) = Y.iterRestrict m (n - (m + 1) + 1) n _ y
+                := Y.iterRestrictComp (m+1) n m (n-(m+1)) 1 (by omega) (by omega) y
+                _ = Y.iterRestrict m (n - m) n _ y := by congr;omega
+            }
+          }
+          restrictMorph := by {
+            intro n
+            funext x
+            simp only [Functor.comp_obj, MonoidalCategory.tensorLeft_obj, Functor.id_obj, Function.comp_apply]
+            unfold ToT.exp
+            simp only [Int.reduceNeg, id_eq, Int.Nat.cast_ofNat_Int, Function.comp_apply,
+              ToTMorphism.mk.injEq]
+            funext m
+            funext y
+            obtain ⟨e,y₀⟩ := y
+            simp only
+            symm
+            apply (congrArg (fun z => (y₀,z)))
+            calc
+              Y.iterRestrict m (n - m) n _ (Y.restrict n x) = Y.iterRestrict m (1+(n-m)) (n+1) _ x
+              := (Y.iterRestrictComp n (n+1) m 1 (n-m) (by omega) (by omega) x)
+              _ = Y.iterRestrict m ((n+1)- m) (n+1) _ x := by congr;omega
+          }
+        }
+        naturality := by {
+          intros A B f
+          apply ToTMorphism.extentionnality
+          funext n
+          funext x
+          simp only [Functor.comp_obj, MonoidalCategory.tensorLeft_obj, Functor.id_obj,
+            Functor.id_map, ToT.unfoldComp, Functor.comp_map, MonoidalCategory.tensorLeft_map]
+          apply ToTMorphism.extentionnality
+          funext m
+          funext y
+          obtain ⟨e,y₀⟩ := y
+          simp only
+          unfold ToT.exp
+          simp only [whiskerMorph]
+          apply (congrArg (fun z => (y₀,z)))
+          apply (congrFun (ToTMorphism.restrictMorphLift f m (n-m) n _) x)
+        }
+      }
+      counit := {
+        app := λ Y => {
+          setMorph := λ n x => match x with | ⟨x₀,⟨f,_⟩⟩ => f n ⟨by rfl,x₀⟩
+          restrictMorph := by {
+            intros n
+            funext x
+            obtain ⟨x₀,⟨f,e⟩⟩ := x
+            apply congrFun (e n)
+          }
+        }
+        naturality := λ A B f => by rfl
+      }
+      left_triangle_components := by {
+        intro Y
+        apply ToTMorphism.extentionnality
+        simp only [Functor.id_obj, MonoidalCategory.tensorLeft_obj, Functor.comp_obj,
+          MonoidalCategory.tensorLeft_map]
+        funext n
+        funext z
+        obtain ⟨x,y⟩ := z
+        simp only [ToT.unfoldComp, whiskerMorph, Nat.sub_self, ToT.unfoldId]
+        rw [Y.iterRestrictZero]
+      }
+      right_triangle_components := by {
+        intro Y
+        apply ToTMorphism.extentionnality
+        funext n
+        funext x
+        obtain ⟨fx,rx⟩ := x
+        simp only [Functor.id_obj, Functor.comp_obj, MonoidalCategory.tensorLeft_obj,
+          ToT.unfoldComp, ToT.unfoldId]
+        apply ToTMorphism.extentionnality
+        funext m
+        funext x
+        obtain ⟨e,x₀⟩ := x
+        delta ToT.exp
+        simp only [Int.reduceNeg, id_eq, Int.Nat.cast_ofNat_Int, Function.comp_apply]
+        apply expIterRestrict Y X m (n-m) n m (by omega) (by rfl) ⟨fx,rx⟩ x₀
+      }
+    }
+  }
 
 
 
 
-instance : CartesianClosed ToT := CartesianClosed.mk _ (λ X => )
+--instance : CartesianClosed ToT := _
