@@ -19,7 +19,7 @@ structure ToT where
 
 structure ToTMorphism (X Y : ToT) where
   setMorph : (n: ℕ) → (X.set n) → (Y.set n)
-  restrictMorph: ∀ n,
+  restrictMorph: ∀ (n : ℕ),
     (Y.restrict n) ∘ (setMorph (n+1)) = (setMorph n) ∘ (X.restrict n)
 
 instance : Category ToT where
@@ -32,7 +32,7 @@ instance : Category ToT where
     setMorph := λ n => (v.setMorph n) ∘ (u.setMorph n),
     restrictMorph := by {
       intro n
-      simp
+      simp only
       rw [← comp_assoc, v.restrictMorph n, comp_assoc, u.restrictMorph n, comp_assoc]
     }
   }
@@ -51,25 +51,28 @@ def ToT.iterRestrict (o : ToT) (n k m : ℕ) (e : n + k = m) (x : o.set m) : o.s
     have eq : n + 1 + k₀ = m := by omega
     o.restrict n (o.iterRestrict (n + 1) k₀ m eq x)
 
-def ToT.iterRestrictZero (o : ToT) (n m : ℕ) (e : n = m) (x : o.set m) : o.iterRestrict n 0 m e x = e ▸ x := by
-  unfold ToT.iterRestrict
-  simp
+@[simp]
+def ToT.iterRestrictZero (o : ToT) (n m : ℕ) (e : n = m) (x : o.set m) : o.iterRestrict n 0 m e x = e ▸ x := by rfl
 
+@[simp]
 def ToT.iterRestrictComp (o : ToT) (n m p k q : ℕ) (e₁ : n + k = m) (e₂ : p + q = n) (x : o.set m) :
     o.iterRestrict p q n e₂ (o.iterRestrict n k m e₁ x) = o.iterRestrict p (k + q) m (by omega) x := by
     induction q generalizing p with
     | zero =>
       rw [ToT.iterRestrictZero]
       subst e₂
-      simp
+      simp only [Nat.add_zero, add_zero]
     | succ q₀ hr =>
       unfold ToT.iterRestrict
-      simp
+      simp only [Nat.add_eq]
       rw [hr]
+
 theorem ToTMorphism.extentionnality (X Y : ToT) (f g : ToTMorphism X Y)
-  (e : f.setMorph = g.setMorph) : f = g := by {
+  (e : (n : ℕ) → (x : X.set n) → f.setMorph n x = g.setMorph n x) : f = g := by {
     cases f;cases g
     congr
+    funext n x
+    apply e
   }
 theorem ToTMorphism.restrictMorphLift {X Y : ToT} (η : X ⟶ Y) : ∀ n k m, (eq : n + k = m) →
     (Y.iterRestrict n k m eq) ∘ (η.setMorph m) = (η.setMorph n) ∘ (X.iterRestrict n k m eq) := by {
@@ -79,17 +82,17 @@ theorem ToTMorphism.restrictMorphLift {X Y : ToT} (η : X ⟶ Y) : ∀ n k m, (e
       | zero =>
         intro m eq
         funext x
-        simp
+        simp only [Function.comp_apply]
         rw [ToT.iterRestrictZero,ToT.iterRestrictZero]
         subst eq
         rfl
       | succ k hk =>
           intro m eq
           funext x
-          simp [ToT.iterRestrict]
+          simp only [ToT.iterRestrict, Function.comp_apply]
           rw [compDefExt (η.setMorph n)]
           rw [<-η.restrictMorph]
-          simp
+          simp only [Function.comp_apply]
           congr
           rw [compDefExt (Y.iterRestrict (n+1) k m _),compDefExt (η.setMorph (n+1))]
           rw [hk]
@@ -107,14 +110,15 @@ def ToT.toOne (X : ToT) : ToTMorphism X ToT.one := {
     intro n
     funext x
     unfold ToT.one
-    simp
+    simp only [Function.comp_apply]
   }
 }
 
 private def ToT_terminal : CategoryTheory.Limits.LimitCone (CategoryTheory.Functor.empty ToT) := {
   cone := {
     pt := ToT.one,
-    π := ⟨λ X => (match X with | {as := Xa} => Xa.rec),by {simp}⟩
+    π := ⟨λ X => (match X with | {as := Xa} => Xa.rec),by {simp only [Functor.const_obj_obj,
+      Functor.const_obj_map, Category.id_comp, IsEmpty.forall_iff, implies_true]}⟩
   },
   isLimit := {
     lift := λ s => ToT.toOne s.pt,
@@ -145,9 +149,10 @@ private def ToT_2prod (X Y : ToT) : Limits.LimitCone (CategoryTheory.Limits.pair
         restrictMorph := λ n => funext (λ x => rfl)
       },
       naturality := λ a b f => by {
-        simp
+        simp only [Functor.const_obj_obj, Functor.const_obj_map, Limits.pair_obj_left,
+          Limits.pair_obj_right, Category.id_comp]
         match f with | .up (.up x) => {
-        have e : a = b := by {cases a;cases b;simp at x;simp;apply x}
+        have e : a = b := by {cases a;cases b;simp only at x;simp only [Discrete.mk.injEq];apply x}
         subst e
         rfl
         }
@@ -161,8 +166,10 @@ private def ToT_2prod (X Y : ToT) : Limits.LimitCone (CategoryTheory.Limits.pair
     {
         setMorph := λ n x => Prod.mk (π₁.setMorph n x) (π₂.setMorph n x),
         restrictMorph := by {
-          intro n;simp;funext x;simp
-          unfold ToT_prod;simp;
+          intro n;simp only [Functor.const_obj_obj, Limits.pair_obj_left, Function.comp_apply,
+            Limits.pair_obj_right, Functor.const_obj_map, id_eq, eq_mpr_eq_cast, Discrete.mk_as,
+            cast_eq];funext x;simp only [Function.comp_apply]
+          unfold ToT_prod;simp only [Prod.mk.injEq];
           exact And.intro
             (congrFun (π₁.restrictMorph n) x)
             (congrFun (π₂.restrictMorph n) x)
@@ -178,13 +185,18 @@ private def ToT_2prod (X Y : ToT) : Limits.LimitCone (CategoryTheory.Limits.pair
         }
       },
     uniq := λ s m e => by {
-      simp
-      apply ToTMorphism.extentionnality
-      simp
-      funext n x
+      simp only [Functor.const_obj_obj, Limits.pair_obj_left, Function.comp_apply,
+        Limits.pair_obj_right, Functor.const_obj_map, id_eq, eq_mpr_eq_cast, Discrete.mk_as,
+        cast_eq, Limits.BinaryFan.π_app_left, Limits.BinaryFan.π_app_right]
+      apply ToTMorphism.extentionnality;intros n x
+      simp only [Functor.const_obj_obj, Limits.pair_obj_left, Function.comp_apply,
+        Limits.pair_obj_right, Functor.const_obj_map, id_eq, eq_mpr_eq_cast, Discrete.mk_as,
+        cast_eq]
       have e₁ := e {as := Limits.WalkingPair.left}
       have e₂ := e {as := Limits.WalkingPair.right}
-      clear e;simp at e₁ e₂
+      clear e;simp only [Limits.pair_obj_left, Functor.const_obj_obj, Function.comp_apply,
+        Limits.pair_obj_right, Functor.const_obj_map, id_eq, eq_mpr_eq_cast, Discrete.mk_as,
+        cast_eq, Limits.BinaryFan.π_app_left, Limits.BinaryFan.π_app_right] at e₁ e₂
       rw [<-e₁,<-e₂]
       unfold CategoryStruct.comp Category.toCategoryStruct instCategoryToT
       rfl
@@ -204,7 +216,7 @@ private def ToT.exp (X : ToT) : ToT ⥤ ToT where
       restrictMorph := λ m => by {
         funext x
         simp only [Function.comp_apply]
-        simp[ToT.cut]
+        simp only [cut]
         obtain ⟨e,x₀⟩ := x
         simp only
         exact congrFun (f.restrictMorph m) ⟨by omega,x₀⟩
@@ -306,14 +318,10 @@ instance : MonoidalClosed ToT where
         }
         naturality := by {
           intros A B f
-          apply ToTMorphism.extentionnality
-          funext n
-          funext x
+          apply ToTMorphism.extentionnality;intros n x
           simp only [Functor.comp_obj, MonoidalCategory.tensorLeft_obj, Functor.id_obj,
             Functor.id_map, ToT.unfoldComp, Functor.comp_map, MonoidalCategory.tensorLeft_map]
-          apply ToTMorphism.extentionnality
-          funext m
-          funext y
+          apply ToTMorphism.extentionnality;intros m y
           obtain ⟨e,y₀⟩ := y
           simp only
           unfold ToT.exp
@@ -336,26 +344,20 @@ instance : MonoidalClosed ToT where
       }
       left_triangle_components := by {
         intro Y
-        apply ToTMorphism.extentionnality
+        apply ToTMorphism.extentionnality; intros n z
         simp only [Functor.id_obj, MonoidalCategory.tensorLeft_obj, Functor.comp_obj,
           MonoidalCategory.tensorLeft_map]
-        funext n
-        funext z
         obtain ⟨x,y⟩ := z
         simp only [ToT.unfoldComp, whiskerMorph, Nat.sub_self, ToT.unfoldId]
         rw [Y.iterRestrictZero]
       }
       right_triangle_components := by {
         intro Y
-        apply ToTMorphism.extentionnality
-        funext n
-        funext x
+        apply ToTMorphism.extentionnality;intros n x
         obtain ⟨fx,rx⟩ := x
         simp only [Functor.id_obj, Functor.comp_obj, MonoidalCategory.tensorLeft_obj,
           ToT.unfoldComp, ToT.unfoldId]
-        apply ToTMorphism.extentionnality
-        funext m
-        funext x
+        apply ToTMorphism.extentionnality; intros m x
         obtain ⟨e,x₀⟩ := x
         delta ToT.exp
         simp only [Int.reduceNeg, id_eq, Int.Nat.cast_ofNat_Int, Function.comp_apply]
@@ -368,3 +370,154 @@ instance : MonoidalClosed ToT where
 
 
 --instance : CartesianClosed ToT := _
+
+
+
+-- LATER
+def ToT.Later : ToT ⥤ ToT where
+  obj X := {
+    set := fun
+          | 0 => Unit
+          | n+1 => X.set n
+    restrict := fun
+          | 0, _ => ()
+          | n+1, x => X.restrict n x
+  }
+  map {X Y} f := {
+    setMorph := fun
+      | 0,_ => ()
+      | n+1,x => f.setMorph n x
+    restrictMorph := λ n => by {
+      funext x
+      simp only [Nat.reduceAdd, Function.comp_apply]
+      cases n
+      case zero => rfl
+      case succ k => simp only; apply congrFun (f.restrictMorph k) x
+    }
+  }
+  map_id X := by {
+    apply ToTMorphism.extentionnality; intros n x
+    cases n
+    case zero => rfl
+    case succ k => rfl
+  }
+  map_comp {X Y Z} f g := by {
+    apply ToTMorphism.extentionnality; intros n x
+    cases n
+    case zero => rfl
+    case succ k => rfl
+  }
+
+def ToT.Earlier : ToT ⥤ ToT where
+  obj X := {
+    set := λ n => X.set (n+1)
+    restrict := λ n => X.restrict (n+1)
+  }
+  map {X Y} f := {
+    setMorph := λ n => f.setMorph (n+1)
+    restrictMorph := λ n => f.restrictMorph (n+1)
+  }
+  map_id X := by {
+    apply ToTMorphism.extentionnality
+    simp only [unfoldId, implies_true]
+  }
+  map_comp {X Y Z} f g := by {
+    apply ToTMorphism.extentionnality
+    simp only [unfoldComp, implies_true]
+  }
+
+@[simp]
+def LaterUnfold (X : ToT) (n : ℕ): (ToT.Later.obj X).set (n+1) = X.set n := by rfl
+@[simp]
+def LaterUnfold0 (X : ToT) : (ToT.Later.obj X).set 0 = Unit := by rfl
+@[simp]
+def LaterUnfoldRestrict0 (X : ToT) (x:X.set 0): (ToT.Later.obj X).restrict 0 x = () := by rfl
+@[simp]
+def LaterUnfoldRestrictN (X : ToT) (n : ℕ) (x:X.set (n+1)): (ToT.Later.obj X).restrict (n+1) x = X.restrict n x := by rfl
+@[simp]
+def EarlierUnfold (X : ToT) (n : ℕ): (ToT.Earlier.obj X).set (n) = X.set (n+1) := by rfl
+@[simp]
+def EarlierUnfoldRestrict (X : ToT) (n : ℕ) (x : X.set (n+1+1)): (ToT.Earlier.obj X).restrict n x = X.restrict (n + 1) x := by rfl
+
+def ToT.LaterEarlierAdj : Adjunction ToT.Earlier ToT.Later where
+  unit := {
+    app := λ X => {
+      setMorph := λ n x => match n with | 0 => () | _+1 => x
+      restrictMorph := λ n => by {
+        funext x
+        cases n
+        case zero => simp only [Functor.comp_obj, Functor.id_obj, Nat.reduceAdd, Function.comp_apply,
+          LaterUnfoldRestrict0]
+        case succ k => simp only [Functor.comp_obj, Functor.id_obj, Function.comp_apply,
+          LaterUnfoldRestrictN,EarlierUnfoldRestrict]
+      }
+    }
+    naturality := λ {X Y} f => by {
+      apply ToTMorphism.extentionnality; intros n x
+      cases n
+      case zero => unfold Later Earlier;simp only [Nat.reduceAdd, Functor.comp_obj, Functor.id_obj,
+        Functor.id_map, unfoldComp, Functor.comp_map]
+      case succ k => unfold Earlier Later;simp only [Nat.reduceAdd, Functor.comp_obj,
+        Functor.id_obj, Functor.id_map, unfoldComp, Functor.comp_map]
+    }
+  }
+  counit := {
+    app := λ X => {
+      setMorph := λ n x => x
+      restrictMorph := λ n => by {
+        funext x
+        simp only [Functor.id_obj, Functor.comp_obj, Function.comp_apply, EarlierUnfoldRestrict,
+          LaterUnfoldRestrictN]
+      }
+    }
+    naturality := λ {X Y} f => by {
+      apply ToTMorphism.extentionnality; intros n x
+      unfold Earlier Later
+      simp only [Functor.id_obj, Nat.reduceAdd, Functor.comp_obj, Functor.comp_map, unfoldComp,
+        Functor.id_map]
+    }
+  }
+  right_triangle_components Y := by {
+    apply ToTMorphism.extentionnality;intros n x
+    unfold Later
+    cases n
+    case zero => cases x;simp only [Nat.reduceAdd, Functor.id_obj, Functor.comp_obj, unfoldComp,
+      unfoldId]
+    case succ n => simp only [Nat.reduceAdd, Functor.id_obj, Functor.comp_obj, unfoldComp, unfoldId]
+  }
+  left_triangle_components X := by {
+    apply ToTMorphism.extentionnality;intros n x
+    unfold Earlier
+    cases n
+    case zero => simp only [Functor.id_obj, Nat.reduceAdd, Functor.comp_obj, unfoldComp, unfoldId]
+    case succ n => simp only [Functor.id_obj, Functor.comp_obj, unfoldComp, unfoldId]
+  }
+
+def fixpval {Γ A : ToT} (f : ToT_prod Γ (ToT.Later.obj A) ⟶ A): (n : Nat) →  Γ.set n → A.set n
+  | 0, γ => f.setMorph 0 (γ, ())
+  | n+1, γ => f.setMorph (n+1) (γ, fixpval f n (Γ.restrict n γ))
+
+def fixp {Γ X : ToT} (f : ToT_prod Γ (ToT.Later.obj X) ⟶ X) : Γ ⟶ X where
+  setMorph := fixpval f
+  restrictMorph n := by {
+    funext γ
+    induction n with
+    | zero => simp only [fixpval, Function.comp_apply];apply congrFun (f.restrictMorph 0) _
+    | succ m p => simp only [fixpval,f.restrictMorph,ToT_prod]
+                  simp only [ToT.Later]
+                  simp only [Function.comp_apply]
+                  have ee := congrFun (f.restrictMorph (m+1)) (γ, f.setMorph (m + 1) (Γ.restrict (m + 1) γ, fixpval f m (Γ.restrict m (Γ.restrict (m + 1) γ))))
+                  simp only [Function.comp_apply] at ee
+                  rw [ee]
+                  congr
+                  simp only [ToT_prod,ToT.Later]
+                  congr
+                  have e := p (Γ.restrict (m + 1) γ)
+                  simp only [Function.comp_apply] at e
+                  rw [<- e]
+                  congr
+  }
+def ToT.snd (X Y : ToT) : (MonoidalCategoryStruct.tensorObj X Y) ⟶ Y
+  := (MonoidalCategoryStruct.whiskerRight (X.toOne) Y) ≫ (MonoidalCategoryStruct.leftUnitor Y).hom
+def fixpoint (X : ToT) (f : ToT.Later.obj X ⟶ X) : ToT.one ⟶ X :=
+  fixp ((MonoidalCategoryStruct.leftUnitor (ToT.Later.obj X)).hom ≫ f)
