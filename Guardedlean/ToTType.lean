@@ -152,10 +152,10 @@ def ToTType.adv (f : A ⤳ ▷B) : (◁A) ⤳ B := (ToT.LaterEarlierAdj.homEquiv
 def ToTType.Prod (A B : ToTType) : ToTType := @MonoidalCategory.tensorObj ToT _ _ A B
 
 def ToTType.fst : (ToTType.Prod A B) ⤳ A
-  := (@MonoidalCategoryStruct.whiskerLeft ToT _ _ _ _ _ B.toOne) ≫ (@MonoidalCategoryStruct.rightUnitor ToT _ _ A).hom
+  := (@ChosenFiniteProducts.product ToT _ _ A B).cone.π.app ⟨.left⟩
 
 def ToTType.snd : (ToTType.Prod A B) ⤳ B
-  := (@MonoidalCategoryStruct.whiskerRight ToT _ _ _ _ A.toOne B) ≫ (@MonoidalCategoryStruct.leftUnitor ToT _ _ B).hom
+  := (@ChosenFiniteProducts.product ToT _ _ A B).cone.π.app ⟨.right⟩
 
 -- This is a syntactic sugar for the universal property of the product
 def ToTType.pair (A B C : ToTType) (f : C ⤳ A) (g : C ⤳ B) : (C ⤳ ToTType.Prod A B)
