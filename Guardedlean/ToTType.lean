@@ -7,11 +7,13 @@ import Mathlib.CategoryTheory.ChosenFiniteProducts
 import Mathlib.CategoryTheory.Closed.Cartesian
 import Mathlib.CategoryTheory.Limits.Shapes.FiniteProducts
 import Mathlib.CategoryTheory.Limits.Shapes.Terminal
-import Guardedlean.ToT
+import Guardedlean.ToT.Later
 
 open CategoryTheory
 
 namespace Guardedlean
+def ToTPred (Γ : ToT) : Type
+  := {φ : (n : Nat) → (γ : Γ.set n) → Prop // ∀ n γ, φ (n+1) γ → φ n (Γ.restrict n γ)}
 
 alias ToTType := ToT
 def ToTType.F (X : ToTType):= X.set

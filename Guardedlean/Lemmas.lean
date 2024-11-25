@@ -1,12 +1,5 @@
 import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.Category.Preorder
-import Mathlib.CategoryTheory.Functor.Basic
-import Mathlib.CategoryTheory.Functor.Category
-import Mathlib.CategoryTheory.Functor.Const
-import Mathlib.CategoryTheory.ChosenFiniteProducts
-import Mathlib.CategoryTheory.Closed.Cartesian
-import Mathlib.CategoryTheory.Limits.Shapes.FiniteProducts
-import Mathlib.CategoryTheory.Limits.Shapes.Terminal
 
 namespace Guardedlean
 
