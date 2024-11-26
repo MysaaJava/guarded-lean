@@ -19,6 +19,7 @@ class Hyperdoctrine (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat) (T : Typ
   rightAdjunction {A B : T} (f : A ⟶ B) : CategoryTheory.Adjunction (u.map (P.map ⟨f⟩)) (rightAdj f)
 
   -- Beck-Chevalley property : The right/left mate of an identity from a pullback is inversible
+  -- id is casted id as k ≫ f = h ≫ g
   leftBeckChevalley (L J K : T) (f : K ⟶ L) (g : J ⟶ L) (pb : Limits.LimitCone (Limits.cospan f g)):
      let k := pb.cone.π.app .left;let h := pb.cone.π.app .right;
      let id : u.map (P.map (.op f)) ≫ u.map (P.map (.op k)) ⟶ u.map (P.map (.op g)) ≫ u.map (P.map (.op h))
@@ -60,5 +61,7 @@ instance : HasForget₂ HeytAlg Preord :=
    let _ := HasForget₂.trans HeytAlg Lat PartOrd
    HasForget₂.trans HeytAlg PartOrd Preord
 
+def HeytAsCat : HeytAlg ⥤ Cat := (forget₂ HeytAlg Preord ⋙ preordToCat)
+
 abbrev FirstOrderHyperdoctrine (T : Type u) [Category.{v} T] :=
-   Hyperdoctrine HeytAlg (forget₂ HeytAlg Preord ⋙ preordToCat) T
+   Hyperdoctrine HeytAlg HeytAsCat T

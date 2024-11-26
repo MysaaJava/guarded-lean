@@ -38,14 +38,3 @@ lemma compCast {α α' β γ : Sort u} (f : α → β) (g : β → γ) {e : α =
 lemma compCast2 {α β γ γ' : Sort u} (f : α → β) (g : β → γ) {e : γ = γ'}: (e ▸ g) ∘ f = e ▸ (g ∘ f) := by {cases e;rfl}
 
 lemma compDefExt {α β γ : Sort u} (f : β → γ) (g : α → β) (x : α): f (g x) = (f ∘ g) x := by simp
-
-
--- We can do an induction on ℕ with (0,1,+)
-lemma ℕsumInduction (P : ℕ → Prop) (zero : P 0) (one : P 1) (add : ∀ a b, P a → P b → P (a+b)):
-  ∀ n, P n := by
-  intro n
-  induction n with
-  | zero => apply zero
-  | succ n₀ hr => cases n₀ with
-  | zero => apply one
-  | succ n₁ => apply add; apply hr; apply one
