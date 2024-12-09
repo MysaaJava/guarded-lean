@@ -12,22 +12,38 @@ lemma comp_assoc {A B C D:Type} (a : A → B) (b : B → C) (c : C → D) :
   (c ∘ b) ∘ a = c ∘ (b ∘ a) := by {
     rw [Function.comp_def,Function.comp_def,Function.comp_def,Function.comp_def]
   }
-lemma cast_replace {X : Sort} {Y : X → Sort} {a b : X} (eq eq': Y a = Y b) (x : Y a) : eq ▸ x = eq' ▸ x := by {cases eq; rfl}
+lemma cast_replace {A B : Sort u} (eq eq': A = B) {x y : A} (e : x = y): eq ▸ x = eq' ▸ y := by {cases eq; cases e; rfl}
 
-lemma cast_symm {X Y : Sort} (e : X = Y) (x : X) (y : Y): e ▸ x = y → x = e ▸ y := by intro h;cases h;simp
+lemma cast_symm {X Y : Sort} {e : X = Y} (x : X) (y : Y): cast e x = y → x = cast (Eq.symm e) y := by intro h;cases h;rfl
 
 @[simp]
-lemma cast_poly {α β : Sort} {φ : Sort → Sort} (f : {ξ : Sort} → ξ → φ ξ) (e : α = β) (x : α)
+lemma cast_poly {α β : Sort u} {φ : Sort u → Sort v} (f : {ξ : Sort u} → ξ → φ ξ) (e : α = β) (x : α)
   : f (cast e x) = cast (congrArg φ e) (f x) := by {
     cases e
     rfl
   }
 @[simp]
-lemma cast_poly2 {X : Sort u} {α β : X} {φ ψ : X → Sort v} (f : {ξ : X} → φ ξ → ψ ξ) (e : α = β) (x : φ α)
-  : f (cast (congrArg φ e) x) = cast (congrArg ψ e) (f x) := by {
+lemma cast_poly2 {X : Sort u} {α β : X} {φ : X → Sort v} {ψ : X → Sort w} (f : {ξ : X} → φ ξ → ψ ξ) (e : α = β) (x : φ α)
+  : f ((congrArg φ e) ▸ x) = (congrArg ψ e) ▸ (f x) := by {
     cases e
     rfl
   }
+lemma cast_poly3 {X : Sort u} {α β : X} {φ : X → Sort v} {Y : Sort w} (f : {ξ : X} → φ ξ → Y) (e : α = β) (x : φ α)
+  : @f α x = @f β (cast (congrArg φ e) x) := by {
+    cases e
+    rfl
+  }
+
+lemma Eq.rec_symm {X : Sort u} {ξ : (x : X) → Sort w} {A B : X} (e : A = B) {x : ξ A} {y : ξ B}:
+  Eq.rec (motive := λ α _ => ξ α) x e = y → x = Eq.rec (motive := λ α _ => ξ α) y (Eq.symm e) := by intro h;cases h;cases e;rfl
+
+lemma Eq.rec_lam {X : Sort u} {Y : Sort v} (ξ : (x : X) → (y : Y) → Sort w) {a : X} (f : (y : Y) → ξ a y) {b : X} (eq : a = b) :
+  Eq.rec (motive := λ x _ => (y : Y) → ξ x y) (λ y => f y) eq = λ y => Eq.rec (motive := fun x _ => ξ x y) (f y) eq:= by cases eq;rfl
+
+lemma Eq.rec_congrArg {Γ : Sort u} {A B : Γ} (e : A = B) (ξ : (x : Γ) → Sort v) (h : ξ A) :
+  Eq.rec (motive := fun x _ => ξ x) h e = Eq.rec (motive := fun x _ => x) h (congrArg ξ e) := by cases e;rfl
+
+
 lemma etaCast {α β γ: Sort u} {f : β → γ} {e : α = β} : (fun x:α => f (e ▸ x)) = e ▸ f := by {
   cases e
   rfl
