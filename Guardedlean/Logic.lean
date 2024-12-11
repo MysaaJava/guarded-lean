@@ -4,6 +4,7 @@ import Mathlib.CategoryTheory.Limits.Preserves.Basic
 import Mathlib.CategoryTheory.Bicategory.Functor.Pseudofunctor
 import Mathlib.Order.Category.HeytAlg
 import Guardedlean.Lemmas
+import Mathlib.CategoryTheory.Limits.Shapes.FiniteLimits
 
 open CategoryTheory
 
@@ -27,7 +28,7 @@ def CommutativeSquare {T : Type u} [Category.{v} T]
       | .term .right => by simp only [Functor.const_obj_obj, Limits.cospan_one,
         Functor.const_obj_map, Category.id_comp, Limits.cospan_right, Limits.cospan_map_inr,eq]
       | .id x => by simp only [Functor.const_obj_obj, Limits.WidePullbackShape.hom_id,
-        Functor.const_obj_map, Limits.cospan_one, Category.id_comp, Functor.map_id,
+        Functor.const_obj_map, Limits.cospan_one, Category.id_comp, CategoryTheory.Functor.map_id,
         Category.comp_id]
    }
 
@@ -41,15 +42,15 @@ def Comm2Cell {T : Type u} [Category.{v} T]
 def cospanMapEq {T : Type u₁} [Category.{v₁} T] {U : Type u₂} [Category.{v₂} U] (F : T ⥤ U)
   {L J K : T} (f : K ⟶ L) (g : J ⟶ L) :
   Limits.cospan (F.map f) (F.map g) = (Limits.cospan f g) ⋙ F:= by
-    apply Functor.ext
+    apply CategoryTheory.Functor.ext
     · intro X Y x
       match x with
       | .term .left => simp only [Limits.cospan_left, Limits.cospan_one, Limits.cospan_map_inl,
         Functor.comp_obj, eqToHom_refl, Functor.comp_map, Category.comp_id, Category.id_comp]
       | .term .right => simp only [Limits.cospan_right, Limits.cospan_one, Limits.cospan_map_inr,
         Functor.comp_obj, eqToHom_refl, Functor.comp_map, Category.comp_id, Category.id_comp]
-      | .id Z => simp only [Limits.WidePullbackShape.hom_id, Functor.map_id, Functor.comp_obj,
-        Functor.comp_map, Category.id_comp, eqToHom_trans, eqToHom_refl]
+      | .id Z => simp only [Limits.WidePullbackShape.hom_id, CategoryTheory.Functor.map_id,
+        Functor.comp_obj, Functor.comp_map, Category.id_comp, eqToHom_trans, eqToHom_refl]
     · intro X
       match X with
       | .left => simp only [Limits.cospan_left, Functor.comp_obj]
@@ -108,7 +109,7 @@ u₃ : Universe of Obj(T)
 v₃ : Universe of Hom(T)
 -/
 class Hyperdoctrine.{u₁,v₁,u₂,v₂,u₃,v₃} (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂})
-  (T : Type u₃) [Category.{v₃} T] [Limits.HasLimits T] where
+  (T : Type u₃) [Category.{v₃} T] [Limits.HasFiniteLimits T] where
 
   P : Tᵒᵖ ⥤ C
 
@@ -157,7 +158,7 @@ instance (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂}) (T : Ty
      comp η ν := NatTrans.vcomp η ν
 
 def HyperdoctrineFunctor.{u₁,v₁,u₂,v₂,u₃,v₃} (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂})
- (T : Type u₃) [Category.{v₃} T] [Limits.HasLimits T] [HT : Hyperdoctrine C u T] (U : Type u₄) [Category.{v₄} U] [Limits.HasLimits U]
+ (T : Type u₃) [Category.{v₃} T] [Limits.HasFiniteLimits T] [HT : Hyperdoctrine C u T] (U : Type u₄) [Category.{v₄} U] [Limits.HasLimits U]
  (F : U ⥤ T) [pbF:Limits.PreservesLimitsOfShape Limits.WalkingCospan F]: Hyperdoctrine C u U where
    P := F.op ⋙ HT.P
    leftAdj f := HT.leftAdj (F.map f)
@@ -180,5 +181,5 @@ instance : HasForget₂ HeytAlg Preord :=
 
 def HeytAsCat : HeytAlg ⥤ Cat := (forget₂ HeytAlg Preord ⋙ preordToCat)
 
-abbrev FirstOrderHyperdoctrine (T : Type u) [Category.{v} T] :=
+abbrev FirstOrderHyperdoctrine (T : Type u) [Category.{v} T] [Limits.HasFiniteLimits T]:=
    Hyperdoctrine HeytAlg HeytAsCat T

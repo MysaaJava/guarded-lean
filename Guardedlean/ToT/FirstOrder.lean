@@ -234,20 +234,20 @@ def ToT.LaterZeroCone {X Y Z : ToT} (f : X ⟶ Z) (g : Y ⟶ Z) (n : ℕ)
             CategoryTheory.Category.id_comp, CategoryTheory.Functor.map_id,
             CategoryTheory.Category.comp_id]
     }
-def ToT.PullbackElementwise {X Y Z : ToT} (f : X ⟶ Z) (g : Y ⟶ Z) (n : ℕ)
-  (x : X.set n) (y : Y.set n) (z : Z.set n) (ex : f.f n x = z) (ey : g.f n y = z)
-  (pb : Limits.LimitCone (Limits.cospan f g)) :
-  {δ : pb.cone.pt.set n // (pb.cone.π.app .left).f n δ = x ∧ (pb.cone.π.app .right).f n δ = y}
+def ToT.PullbackElementwise (L J K M : ToT) (f : K ⟶ L) (g : J ⟶ L) (h : M ⟶ J) (k : M ⟶ K)
+  (n : ℕ) (x : K.set n) (y : J.set n) (z : L.set n) (ex : f.f n x = z) (ey : g.f n y = z)
+  (eq : k ≫ f = h ≫ g) (pb : Limits.IsLimit (CommutativeSquare f g h k eq)) :
+  {δ : M.set n // k.f n δ = x ∧ h.f n δ = y}
   := let kone := ToT.LaterZeroCone f g n x y z ex ey;
-    .mk ((pb.isLimit.lift kone).f n ⟨le_refl n⟩) (by {
+    .mk ((pb.lift kone).f n ⟨le_refl n⟩) (by {
       constructor
-      · have a := congrArg (fun ξ => ξ.f n ⟨le_refl n⟩) (pb.isLimit.fac kone .left)
-        simp only [CategoryStruct.comp] at a
+      · have a := congrArg (fun ξ => ξ.f n ⟨le_refl n⟩) (pb.fac kone .left)
+        simp only [CategoryStruct.comp,CommutativeSquare] at a
         rw [a]
         simp only [Limits.cospan_left, LaterZeroCone, Functor.const_obj_obj, LaterZeroInj,
           Nat.sub_self, iterRestrictZero, kone]
-      · have a := congrArg (fun ξ => ξ.f n ⟨le_refl n⟩) (pb.isLimit.fac kone .right)
-        simp only [CategoryStruct.comp] at a
+      · have a := congrArg (fun ξ => ξ.f n ⟨le_refl n⟩) (pb.fac kone .right)
+        simp only [CategoryStruct.comp,CommutativeSquare] at a
         rw [a]
         simp only [Limits.cospan_left, LaterZeroCone, Functor.const_obj_obj, LaterZeroInj,
           Nat.sub_self, iterRestrictZero, kone]
@@ -297,7 +297,7 @@ instance : FirstOrderHyperdoctrine ToT where
         exact p
     }
   }
-  leftBeckChevalley Γ Δ Ξ f g c := {
+  leftBeckChevalley Γ Ξ Δ Φ f g h k e p := {
     out := by
       constructor
       · constructor
@@ -319,7 +319,7 @@ instance : FirstOrderHyperdoctrine ToT where
           · rw [<-βδ] at q
             exact q
   }
-  rightBeckChevalley Γ Δ Ξ f g c := {
+  rightBeckChevalley Γ Ξ Δ Φ f g h k e p := {
     out := by
       constructor
       · constructor

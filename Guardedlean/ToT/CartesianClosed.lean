@@ -1,8 +1,11 @@
+import Lean
 import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.Adjunction.Basic
 import Mathlib.CategoryTheory.ChosenFiniteProducts
 import Mathlib.CategoryTheory.Closed.Monoidal
 import Mathlib.CategoryTheory.Types
+import Mathlib.CategoryTheory.Limits.Shapes.FiniteProducts
+import Mathlib.CategoryTheory.Limits.Constructions.LimitsOfProductsAndEqualizers
 import Guardedlean.ToT.Basic
 
 open CategoryTheory
@@ -10,11 +13,11 @@ open CategoryTheory
 namespace Guardedlean
 
 /--- CCC ---/
-def ToT.one : ToT := ⟨λ _ => Unit, λ _ x => x⟩
+def ToT.one : ToT.{u} := ⟨λ _ => ULift Unit, λ _ x => x⟩
 
-def ToT.toOne (X : ToT) : X ⟶ ToT.one := ⟨λ n _ => (),λ n x => by rfl⟩
+def ToT.toOne (X : ToT) : X ⟶ ToT.one := ⟨λ n _ => .up (),λ n x => by rfl⟩
 
-instance : CategoryTheory.ChosenFiniteProducts ToT where
+instance : CategoryTheory.ChosenFiniteProducts ToT.{u} where
   terminal := {
     cone := {
       pt := ToT.one,
@@ -86,13 +89,13 @@ instance : CategoryTheory.ChosenFiniteProducts ToT where
     }
   }
 
-def ToT.cut (A : ToT) (n : ℕ) : ToT where
+def ToT.cut (A : ToT.{u}) (n : ℕ) : ToT.{u} where
   set m := PProd (m ≤ n) (A.set m)
   restrict m x := match x with | ⟨h,x₀⟩ => ⟨Nat.le_of_succ_le h, A.restrict m x₀⟩
 
-private def ToT.exp (X : ToT) : ToT ⥤ ToT where
+private def ToT.exp.{u} (X : ToT.{u}) : ToT.{u} ⥤ ToT.{u} where
   obj Y := {
-    set := λ n => ToT.Hom (X.cut n) Y
+    set := λ n => ToT.Hom.{u,u} (X.cut n) Y
     restrict := λ n f => {
       f := λ m y => match y with | ⟨h,y₀⟩ => f.f m ⟨by omega,y₀⟩
       restrictF := λ m ⟨e,x₀⟩ => by {
@@ -212,3 +215,77 @@ instance : MonoidalClosed ToT where
       }))
     }
   }
+
+def ToT.equalizer (F : Limits.WalkingParallelPair ⥤ ToT) : Limits.Cone F where
+  pt := {
+    set := λ n => {x : (F.obj .zero).set n // (F.map .left).f n x = (F.map .right).f n x}
+    restrict := λ n x => {
+      val := (F.obj .zero).restrict n x
+      property := by rw [<-(F.map .right).restrictF,<-(F.map .left).restrictF,x.property]
+    }
+  }
+  π := {
+    app := fun
+      | .zero => {
+          f := λ _ x => x.val
+          restrictF := λ n x => by simp only [Limits.parallelPair_obj_zero, id_eq, eq_mpr_eq_cast,
+            Functor.const_obj_obj]
+        }
+      | .one => {
+        f := λ n x => (F.map .left).f n x.val
+        restrictF := λ n x => (F.map .left).restrictF n x.val
+      }
+    naturality := λ _ _ => fun
+      | .left => by apply ToT.Hom.ext;simp only [id_eq, eq_mpr_eq_cast, Functor.const_obj_obj,
+        Limits.parallelPair_obj_one, Functor.const_obj_map, Category.id_comp,
+        Limits.parallelPair_obj_zero, Limits.parallelPair_map_left, unfoldComp, implies_true]
+      | .right => by apply ToT.Hom.ext;simp only [id_eq, eq_mpr_eq_cast, Functor.const_obj_obj,
+        Limits.parallelPair_obj_one, Functor.const_obj_map, Category.id_comp,
+        Limits.parallelPair_obj_zero, Limits.parallelPair_map_right, unfoldComp, Subtype.forall,
+        imp_self, implies_true]
+      | .id k => by apply ToT.Hom.ext;simp only [id_eq, eq_mpr_eq_cast, Functor.const_obj_obj,
+        Limits.walkingParallelPairHom_id, Functor.const_obj_map, Limits.parallelPair_obj_zero,
+        Limits.parallelPair_obj_one, Category.id_comp, CategoryTheory.Functor.map_id,
+        Category.comp_id, implies_true]
+  }
+
+instance : Limits.HasEqualizers ToT where
+  has_limit F := {
+    exists_limit := ⟨{
+      cone := ToT.equalizer F
+      isLimit := {
+        lift := λ s => {
+          f := λ n x => {
+            val := (s.π.app .zero).f n x
+            property := by
+              calc
+                (F.map .left).f n ((s.π.app .zero).f n x) = ((s.π.app .zero) ≫ (F.map .left)).f n x := rfl
+                _ = (s.π.app .one).f n x := by simp only [Functor.const_obj_obj, Limits.Cone.w]
+                _ = ((s.π.app .zero) ≫ (F.map .right)).f n x := by simp only [Functor.const_obj_obj, Limits.Cone.w]
+                _ = (F.map .right).f n ((s.π.app .zero).f n x) := rfl
+          }
+          restrictF := λ n x => by
+            simp only [ToT.equalizer, Functor.const_obj_obj, Subtype.mk.injEq]
+            rw [(s.π.app .zero).restrictF n x]
+            rfl
+        }
+        fac := λ s j => ToT.Hom.ext (λ n x => by
+          simp only [ToT.equalizer, Functor.const_obj_obj, ToT.unfoldComp]
+          cases j
+          case zero =>
+            simp only
+          case one =>
+            calc
+              (F.map .left).f n ((s.π.app .zero).f n x) = ((s.π.app .zero) ≫ (F.map .left)).f n x := rfl
+              _ = (s.π.app .one).f n x := by simp only [Functor.const_obj_obj, Limits.Cone.w]
+        )
+        uniq := λ s m h => ToT.Hom.ext (λ n x => Subtype.ext (by {
+          have h' := congrArg (λ ξ => ξ.f n x) (h .zero)
+          simp only [ToT.equalizer, Functor.const_obj_obj, ToT.unfoldComp] at h'
+          exact h'
+        }))
+      }
+    }⟩
+  }
+instance : Limits.HasFiniteProducts ToT := by infer_instance
+instance : Limits.HasFiniteLimits ToT := Limits.hasFiniteLimits_of_hasEqualizers_and_finite_products
