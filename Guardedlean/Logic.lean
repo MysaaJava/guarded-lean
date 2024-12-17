@@ -7,6 +7,7 @@ import Guardedlean.Lemmas
 import Mathlib.CategoryTheory.Limits.Shapes.FiniteLimits
 
 open CategoryTheory
+open CategoryTheory.Limits
 
 namespace Guardedlean
 
@@ -85,7 +86,7 @@ def CommutativeSquareMap {T : Type u₁} [Category.{v₁} T] {U : Type u₂} [Ca
     | none => simp only [F.map_comp];apply Eq.rec_congrArg (cospanMapEq F f g) (λ ξ => F.obj M ⟶ ξ.obj (.none))
 
 def IsLimitLift {T : Type u₁} [Category.{v₁} T] {U : Type u₂} [Category.{v₂} U] (F : T ⥤ U)
-  [pbF:Limits.PreservesLimitsOfShape Limits.WalkingCospan F]
+  [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
   {L J K M : T} (f : K ⟶ L) (g : J ⟶ L) (h : M ⟶ J) (k : M ⟶ K)
   (eq : k ≫ f = h ≫ g) (p : Limits.IsLimit (CommutativeSquare f g h k eq))
   : Limits.IsLimit (CommutativeSquare (F.map f) (F.map g) (F.map h) (F.map k) (by rw [<-F.map_comp,<-F.map_comp,eq])) := by
@@ -122,7 +123,7 @@ class Hyperdoctrine.{u₁,v₁,u₂,v₂,u₃,v₃} (C : Type u₁) [Category.{v
   -- Beck-Chevalley property : The right/left mate of an identity from a pullback is inversible
   -- id is casted id as k ≫ f = h ≫ g
   leftBeckChevalley (L J K M : T) (f : K ⟶ L) (g : J ⟶ L) (h : M ⟶ J) (k : M ⟶ K)
-     (eq : k ≫ f = h ≫ g) (pb : Limits.IsLimit (CommutativeSquare f g h k eq)):
+     (eq : k ≫ f = h ≫ g) (pb : IsLimit (CommutativeSquare f g h k eq)):
      IsIso ((mateEquiv (leftAdjunction f) (leftAdjunction h)).invFun
      (Comm2Cell (P ⋙ u) (.op k) (.op h) (.op g) (.op f) (by simp only [<-op_comp,eq])))
   rightBeckChevalley (L J K M : T) (f : K ⟶ L) (g : J ⟶ L) (h : M ⟶ J) (k : M ⟶ K)
@@ -151,15 +152,15 @@ class Hyperdoctrine.{u₁,v₁,u₂,v₂,u₃,v₃} (C : Type u₁) [Category.{v
 |---> C is a sub-bicategory of complete categories
 
 -/
-instance (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂}) (T : Type u₃) [Category.{v₃} T] [Limits.HasLimits T] :
+instance (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂}) (T : Type u₃) [Category.{v₃} T] [Limits.HasFiniteLimits T] :
    Category (Hyperdoctrine C u T) where
      Hom P Q := P.P ⟶ Q.P
      id P := 𝟙 P.P
      comp η ν := NatTrans.vcomp η ν
 
-def HyperdoctrineFunctor.{u₁,v₁,u₂,v₂,u₃,v₃} (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂})
+def HyperdoctrineFunctor.{u₁,v₁,u₂,v₂,u₃,v₃,u₄,v₄} (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂})
  (T : Type u₃) [Category.{v₃} T] [Limits.HasFiniteLimits T] [HT : Hyperdoctrine C u T] (U : Type u₄) [Category.{v₄} U] [Limits.HasLimits U]
- (F : U ⥤ T) [pbF:Limits.PreservesLimitsOfShape Limits.WalkingCospan F]: Hyperdoctrine C u U where
+ (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]: Hyperdoctrine C u U where
    P := F.op ⋙ HT.P
    leftAdj f := HT.leftAdj (F.map f)
    leftAdjunction f := HT.leftAdjunction (F.map f)

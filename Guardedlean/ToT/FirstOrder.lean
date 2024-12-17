@@ -234,7 +234,8 @@ def ToT.LaterZeroCone {X Y Z : ToT} (f : X ⟶ Z) (g : Y ⟶ Z) (n : ℕ)
             CategoryTheory.Category.id_comp, CategoryTheory.Functor.map_id,
             CategoryTheory.Category.comp_id]
     }
-def ToT.PullbackElementwise (L J K M : ToT) (f : K ⟶ L) (g : J ⟶ L) (h : M ⟶ J) (k : M ⟶ K)
+
+def ToT.PullbackElementwise {L J K M : ToT} (f : K ⟶ L) (g : J ⟶ L) (h : M ⟶ J) (k : M ⟶ K)
   (n : ℕ) (x : K.set n) (y : J.set n) (z : L.set n) (ex : f.f n x = z) (ey : g.f n y = z)
   (eq : k ≫ f = h ≫ g) (pb : Limits.IsLimit (CommutativeSquare f g h k eq)) :
   {δ : M.set n // k.f n δ = x ∧ h.f n δ = y}
@@ -312,7 +313,7 @@ instance : FirstOrderHyperdoctrine ToT where
           intro n γ p
           -- (∃.f h)((P k)(ξ))(n,γ)
           obtain ⟨δ,⟨pδ,q⟩⟩ := p
-          let ⟨β,⟨βδ,βγ⟩⟩ := ToT.PullbackElementwise f g n δ γ (g.f n γ) pδ rfl c
+          let ⟨β,⟨βδ,βγ⟩⟩ := ToT.PullbackElementwise f g h k n δ γ (g.f n γ) pδ rfl e p
           exists β
           constructor
           · exact βγ
@@ -331,9 +332,9 @@ instance : FirstOrderHyperdoctrine ToT where
         · intro ξ
           constructor
           constructor
-          intro n γ p m pm δ pδ
-          let ⟨β,⟨βδ,βγ⟩⟩ := ToT.PullbackElementwise f g m (Ξ.iterRestrict m (n-m) n (by omega) γ)
-              δ (g.f m δ) (by symm;trans;exact pδ;apply f.iterRestrictF) rfl c
+          intro n γ ep m pm δ pδ
+          let ⟨β,⟨βδ,βγ⟩⟩ := ToT.PullbackElementwise f g h k m (Δ.iterRestrict m (n-m) n (by omega) γ)
+              δ (g.f m δ) (by symm;trans;exact pδ;apply f.iterRestrictF) rfl e p
           rw [<-βγ]
-          exact p m pm β βδ
+          exact ep m pm β βδ
   }

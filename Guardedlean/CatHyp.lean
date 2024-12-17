@@ -1,5 +1,6 @@
 import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.Limits.Types
+import Mathlib.CategoryTheory.Limits.Preserves.Finite
 import Mathlib.Order.Category.HeytAlg
 import Guardedlean.Logic
 
@@ -7,13 +8,12 @@ open CategoryTheory
 
 namespace Guardedlean
 
-
-
-def Hyp (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂})
-  : Catᵒᵖ ⥤ Cat where
-  obj T := ⟨Hyperdoctrine C u T.unop,_⟩
+/-
+def Hyp (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{v₂,u₂})
+   : Pseudofunctor (Lex.{v₃,u₃}ᵒᵖ) (Cat.{max u₁ v₁ u₂ v₂ u₃ v₃,max u₁ v₁ u₂ v₂ u₃ v₃}) where
+  obj T := Hyperdoctrine.{u₁,v₁,u₂,v₂} C u T.unop
   map {T U} F := {
-    obj := λ P => HyperdoctrineFunctor C u T.unop U.unop F.unop
+    obj := λ P => HyperdoctrineFunctor.{u₁,v₁,u₂,v₂,u₃,v₃,u₃,v₃} C u T.unop U.unop F.unop
     map := sorry
   }
 
@@ -45,3 +45,4 @@ class CatHyperdoctrine (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat) (T : 
         := ((P ⋙ u).map_comp f.op k.op) ▸ ((P ⋙ u).map_comp g.op h.op) ▸
         cast (congrArg (fun ξ => (P ⋙ u).map (f.op ≫ k.op) ⟶ (P ⋙ u).map ξ.op) (Limits.PullbackCone.condition pb.cone)) (𝟙 ((P ⋙ u).map (f.op ≫ k.op)))
      IsIso ((mateEquiv (rightAdjunction g) (rightAdjunction k)).toFun id)
+-/
