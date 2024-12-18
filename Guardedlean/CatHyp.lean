@@ -3,20 +3,31 @@ import Mathlib.CategoryTheory.Limits.Types
 import Mathlib.CategoryTheory.Limits.Preserves.Finite
 import Mathlib.Order.Category.HeytAlg
 import Guardedlean.Logic
+import Guardedlean.CategoryTheory.Lex
+import Guardedlean.CategoryTheory.Bicategory.Opposite
 
 open CategoryTheory
 
 namespace Guardedlean
 
-/-
 def Hyp (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{v₂,u₂})
-   : Pseudofunctor (Lex.{v₃,u₃}ᵒᵖ) (Cat.{max u₁ v₁ u₂ v₂ u₃ v₃,max u₁ v₁ u₂ v₂ u₃ v₃}) where
-  obj T := Hyperdoctrine.{u₁,v₁,u₂,v₂} C u T.unop
+   : Pseudofunctor (Opposite1 Lex.{v₃,u₃}) Cat.{v₂,u₂} where
+     obj := sorry
+     map := sorry
+     map₂ := sorry
+     mapId := sorry
+     mapComp := sorry
+
+
+def Hyp (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{v₂,u₂})
+   : Pseudofunctor (Opposite1 Lex.{v₃,u₃}) Cat.{v₂,u₂} where
+  obj T := Bundled.mk (Hyperdoctrine C u T.unop1)
   map {T U} F := {
-    obj := λ P => HyperdoctrineFunctor.{u₁,v₁,u₂,v₂,u₃,v₃,u₃,v₃} C u T.unop U.unop F.unop
+    obj := λ P => HyperdoctrineFunctor C u T.unop1 U.unop1 F.unop1
     map := sorry
   }
 
+/-
 -- TODO Hyperdoctrine is not most generic as Beck-Chevalley is asked on every pullback instead of
 -- only on a specific class of them
 class CatHyperdoctrine (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat) (T : Type u₂) [Category.{v₂} T] where

@@ -4,6 +4,7 @@ import Mathlib.CategoryTheory.Limits.Preserves.Basic
 import Mathlib.CategoryTheory.Bicategory.Functor.Pseudofunctor
 import Mathlib.Order.Category.HeytAlg
 import Guardedlean.Lemmas
+import Guardedlean.CategoryTheory.PreservesChosen
 import Mathlib.CategoryTheory.Limits.Shapes.FiniteLimits
 
 open CategoryTheory
@@ -159,7 +160,7 @@ instance (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂}) (T : Ty
      comp η ν := NatTrans.vcomp η ν
 
 def HyperdoctrineFunctor.{u₁,v₁,u₂,v₂,u₃,v₃,u₄,v₄} (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂})
- (T : Type u₃) [Category.{v₃} T] [Limits.HasFiniteLimits T] [HT : Hyperdoctrine C u T] (U : Type u₄) [Category.{v₄} U] [Limits.HasLimits U]
+ (T : Type u₃) [Category.{v₃} T] [Limits.HasFiniteLimits T] [HT : Hyperdoctrine C u T] (U : Type u₄) [Category.{v₄} U] [Limits.HasFiniteLimits U]
  (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]: Hyperdoctrine C u U where
    P := F.op ⋙ HT.P
    leftAdj f := HT.leftAdj (F.map f)

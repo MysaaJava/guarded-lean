@@ -10,6 +10,8 @@ namespace Guardedlean
 class LexCategory.{v,u} (C : Type u) extends Category.{v,u} C where
    hasFiniteLimits : Limits.HasFiniteLimits C
 
+instance (C : Type u) [LC : LexCategory.{v,u} C] : Limits.HasFiniteLimits C := LC.hasFiniteLimits
+
 def Lex.{v,u} := Bundled LexCategory.{v,u}
 
 instance : CoeSort Lex (Type u) :=
@@ -33,16 +35,6 @@ abbrev LexFunctor.preserves {C : Type u} [LC : LexCategory C]
    {D : Type} [LD : LexCategory D] (F : LexFunctor C D) {J : Type} [sJ : SmallCategory J] [fJ : FinCategory J]
             {K : J ⥤ C} {c : Limits.Cone K} (l : Limits.IsLimit c) : Limits.IsLimit (F.mapCone c) :=
    F.preservesFiniteLimits.preserves l
-
-def xx {C : Type u} [LC : LexCategory C]
-   {D : Type} [LD : Category D] {F G : Functor C D}
-   (e : F = G)
-   (J : Type) [sJ : SmallCategory J] [fJ : FinCategory J]
-   (K : J ⥤ C) (c : Limits.Cone K) (l : Limits.IsLimit c) (s : Limits.Cone (K ⋙ F)):
-   @Quiver.Hom D _ ((e ▸ s).pt) ((G.mapCone c).pt) = @Quiver.Hom D _ (s.pt) (F.mapCone c).pt := by
-      unfold Functor.mapCone
-      rw [e]
-      rfl
 
 @[ext]
 lemma LexFunctor.ext {C : Type u} [LC : LexCategory C]
