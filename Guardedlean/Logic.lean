@@ -151,28 +151,114 @@ class Hyperdoctrine.{u₁,v₁,u₂,v₂,u₃,v₃} (C : Type u₁) [Category.{v
 (4)for each morphism t of T, the “inverse image’.’ functor t* preserves the structure of (2),(3)
 => 1-morphisms of C preserve the structures
 |---> C is a sub-bicategory of complete categories
-
 -/
-instance (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂}) (T : Type u₃) [Category.{v₃} T] [Limits.HasFiniteLimits T] :
+
+def Hyperdoctrine.Hom
+  {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+  (P Q : Hyperdoctrine C u T) := NatTrans (Functor.comp P.P u) (Functor.comp Q.P u)
+
+instance Hyperdoctrine.category.{u₁,v₁,u₂,v₂,u₃,v₃}
+  (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂})
+  (T : Type u₃) [Category.{v₃} T] [Limits.HasFiniteLimits T] :
    Category (Hyperdoctrine C u T) where
-     Hom P Q := P.P ⟶ Q.P
-     id P := 𝟙 P.P
+     Hom P Q := Hyperdoctrine.Hom P Q
+     id P := 𝟙 (P.P ⋙ u)
      comp η ν := NatTrans.vcomp η ν
 
-def HyperdoctrineFunctor.{u₁,v₁,u₂,v₂,u₃,v₃,u₄,v₄} (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{u₂,v₂})
- (T : Type u₃) [Category.{v₃} T] [Limits.HasFiniteLimits T] [HT : Hyperdoctrine C u T] (U : Type u₄) [Category.{v₄} U] [Limits.HasFiniteLimits U]
- (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]: Hyperdoctrine C u U where
-   P := F.op ⋙ HT.P
-   leftAdj f := HT.leftAdj (F.map f)
-   leftAdjunction f := HT.leftAdjunction (F.map f)
-   rightAdj f := HT.rightAdj (F.map f)
-   rightAdjunction f := HT.rightAdjunction (F.map f)
+def Hyperdoctrine.precompose
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T] (P : Hyperdoctrine C u T)
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ : Hyperdoctrine C u U where
+   P := F.op ⋙ P.P
+   leftAdj f := P.leftAdj (F.map f)
+   leftAdjunction f := P.leftAdjunction (F.map f)
+   rightAdj f := P.rightAdj (F.map f)
+   rightAdjunction f := P.rightAdjunction (F.map f)
    leftBeckChevalley Γ Ξ Δ Φ f g h k e p :=
-      HT.leftBeckChevalley (F.obj Γ) (F.obj Ξ) (F.obj Δ) (F.obj Φ) (F.map f) (F.map g) (F.map h) (F.map k)
+      P.leftBeckChevalley (F.obj Γ) (F.obj Ξ) (F.obj Δ) (F.obj Φ) (F.map f) (F.map g) (F.map h) (F.map k)
         (by rw [<-F.map_comp,<-F.map_comp,e]) (IsLimitLift F f g h k e p)
    rightBeckChevalley Γ Ξ Δ Φ f g h k e p :=
-      HT.rightBeckChevalley (F.obj Γ) (F.obj Ξ) (F.obj Δ) (F.obj Φ) (F.map f) (F.map g) (F.map h) (F.map k)
+      P.rightBeckChevalley (F.obj Γ) (F.obj Ξ) (F.obj Δ) (F.obj Φ) (F.map f) (F.map g) (F.map h) (F.map k)
         (by rw [<-F.map_comp,<-F.map_comp,e]) (IsLimitLift F f g h k e p)
+
+def Hyperdoctrine.precompose_map
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T] {P P' : Hyperdoctrine C u T}
+ (η : Hyperdoctrine.Hom P P')
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ : Hyperdoctrine.Hom (Hyperdoctrine.precompose P F) (Hyperdoctrine.precompose P' F) where
+   app X := η.app (.op (F.obj X.unop))
+   naturality {X Y} s := by simp only [Functor.comp_obj, Functor.comp_map]; apply η.naturality
+
+def Hyperdoctrine.HypFun
+  {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+  {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+  (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+   : Hyperdoctrine C u T ⥤ Hyperdoctrine C u U where
+     obj P := Hyperdoctrine.precompose P F
+     map {P P'} η := Hyperdoctrine.precompose_map η F (pbF := _)
+
+def Hyperdoctrine.HypFun_id
+  {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+   : Hyperdoctrine.HypFun (Functor.id T) = Functor.id (Hyperdoctrine C u T) := rfl
+def Hyperdoctrine.HypFun_comp
+  {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+  {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+  {V : Type u₅} [Category.{v₅} V] [Limits.HasFiniteLimits V]
+  {F : T ⥤ U} [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+  {G : U ⥤ V} [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+   : Hyperdoctrine.HypFun (Functor.comp F G) =
+    Functor.comp (Hyperdoctrine.HypFun G) (@Hyperdoctrine.HypFun C _ u _ _ _ _ _ _ F _) := rfl
+
+def Hyperdoctrine.precompose_mapOLD
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T] {P Q : Hyperdoctrine C u T}
+ (η : Hyperdoctrine.Hom P Q)
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ : Hyperdoctrine.Hom (Hyperdoctrine.precompose P F) (Hyperdoctrine.precompose Q F) where
+   app X := η.app (.op (F.obj X.unop))
+   naturality {X Y} s := by simp only [Functor.comp_obj, Functor.comp_map]; apply η.naturality
+
+def Hyperdoctrine.precompose_map₂
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+ {F G : U ⥤ T} [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ (η : NatTrans F G)
+ (P : Hyperdoctrine C u T)
+ : Hyperdoctrine.Hom (Hyperdoctrine.precompose P G) (Hyperdoctrine.precompose P F) :=
+  -- We want a NatTrans ((F.op ⋙ P.P) ⋙ u) ((G.op ⋙ P.P) ⋙ u)
+  whiskerRight (whiskerRight (NatTrans.op η) P.P) u
+
+def Hyperdoctrine.HypNat
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ {F G : U ⥤ T} [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ (η : NatTrans F G)
+ : NatTrans (Hyperdoctrine.HypFun G) (@Hyperdoctrine.HypFun C _ u T _ _ U _ _ F _) where
+    app P := Hyperdoctrine.precompose_map₂ η P
+    naturality {P P'} ρ := by
+      apply NatTrans.ext
+      funext X
+      simp only
+      calc
+        ((HypFun G).map ρ ≫ precompose_map₂ η P').app X = ((HypFun G).map ρ).app X ≫ (precompose_map₂ η P').app X := NatTrans.vcomp_app ((HypFun G).map ρ) (precompose_map₂ η P') X
+        _ = (precompose_map₂ η P).app X ≫ ((HypFun F).map ρ).app X := Eq.symm (ρ.naturality (η.app X.unop).op)
+        _ = (precompose_map₂ η P ≫ (HypFun F).map ρ).app X := by rw [<-NatTrans.vcomp_app];rfl
+
+
+
 
 
 instance : HasForget₂ HeytAlg Preord :=

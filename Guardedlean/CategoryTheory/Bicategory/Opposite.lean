@@ -62,6 +62,7 @@ instance opposite12Q {V} [Quiver V] : Quiver (Opposite12 V) :=
 /-- The opposite of an arrow in `V`. -/
 def Quiver.Hom.op12 {V} [Quiver V] {X Y : V} (f : X ⟶ Y) : Opposite12.op12 Y ⟶ Opposite12.op12 X := ⟨f⟩
 /-- Given an arrow in `Vᵒᵖ`, we can take the "unopposite" back in `V`. -/
+@[simp]
 def Quiver.Hom.unop12 {V} [Quiver V] {X Y : Opposite12 V} (f : X ⟶ Y) : Y.unop12 ⟶ X.unop12 := f.unop12
 instance opposite12CS {V} [BC : CategoryStruct V]: CategoryStruct (Opposite12 V) where
   id B := Opposite12.op12 (BC.id B.unop12)
@@ -72,6 +73,21 @@ instance opposite12C {V} [BC : Category V]: Category (Opposite12 V) where
   comp_id f := by simp only [opposite12CS, Category.id_comp];congr
   assoc f g h := by simp only [opposite12CS, Category.assoc]
 
+def isoOpposite12 {V} [Category V] {A B : V} (eq: A ≅ B)
+ : Opposite12.op12 A ≅ Opposite12.op12 B where
+  hom := Opposite12.op12 eq.inv
+  inv := Opposite12.op12 eq.hom
+  hom_inv_id := by simp only [CategoryStruct.comp, Iso.hom_inv_id, CategoryStruct.id]
+  inv_hom_id := by simp only [CategoryStruct.comp, Iso.inv_hom_id, CategoryStruct.id]
+lemma eqOpposite12 {V} {A B : V} (eq: A = B)
+ : Opposite12.op12 A = Opposite12.op12 B := congrArg Opposite12.op12 eq
+
+@[simp]
+theorem op_unop12 (x : Opposite12 α) : Opposite12.op12 (Opposite12.unop12 x) = x :=
+  rfl
+@[simp]
+theorem unop_op12 (x : α) : Opposite12.unop12 (Opposite12.op12 x) = x :=
+  rfl
 
 end Opposite12
 
@@ -80,24 +96,46 @@ end Opposite12
 See <https://stacks.math.columbia.edu/tag/001M>.
 -/
 
-instance Bicategory.opposite1 (C : Type u₁) [BC : Bicategory.{v₁} C]: Bicategory.{v₁} (Opposite1 C) where
+instance Bicategory.opposite1 (C : Type u₁) [BC : Bicategory.{w₁,v₁} C]: Bicategory.{w₁,v₁} (Opposite1 C) where
+  toCategoryStruct := opposite1CS
   homCategory A B := BC.homCategory B.unop1 A.unop1
   whiskerLeft f g h η := BC.whiskerRight η f
   whiskerRight η f := BC.whiskerLeft f η
   associator {A B C D} f g h := Iso.symm (BC.associator h g f)
   leftUnitor := BC.rightUnitor
   rightUnitor := BC.leftUnitor
+  whisker_exchange η θ := Eq.symm (BC.whisker_exchange θ η)
+  id_whiskerLeft := BC.whiskerRight_id
   whiskerLeft_id f g := BC.id_whiskerRight g f
   whiskerLeft_comp f a b c η θ := BC.comp_whiskerRight η θ f
-  id_whiskerLeft := BC.whiskerRight_id
   comp_whiskerLeft f g a b η := BC.whiskerRight_comp η g f
   id_whiskerRight f g := BC.whiskerLeft_id g f
   comp_whiskerRight η θ f := BC.whiskerLeft_comp f η θ
   whiskerRight_id := BC.id_whiskerLeft
   whiskerRight_comp η f g := BC.comp_whiskerLeft g f η
-  whisker_exchange η θ := Eq.symm (BC.whisker_exchange θ η)
   --whisker_assoc f _ _ η g := by simp?;BC.whisker_assoc g η f
   pentagon f g h i := BC.pentagon_inv i h g f
   triangle {a b c} f g := triangle_assoc_comp_right g f
+
+instance Bicategory.opposite12 (C : Type u₁) [BC : Bicategory.{w₁,v₁} C]: Bicategory.{w₁,v₁} (Opposite12 C) where
+  toCategoryStruct := opposite12CS
+  homCategory A B := @opposite12C _ (BC.homCategory B.unop12 A.unop12)
+  whiskerLeft f g h η := ⟨BC.whiskerRight η.unop12 f.unop12⟩
+  whiskerRight η f := ⟨BC.whiskerLeft f.unop12 η.unop12⟩
+  associator {A B C D} f g h := isoOpposite12 (Iso.symm (BC.associator h.unop12 g.unop12 f.unop12))
+  leftUnitor f := isoOpposite12 (BC.rightUnitor f.unop12)
+  rightUnitor f := isoOpposite12 (BC.leftUnitor f.unop12)
+  whisker_exchange η θ := eqOpposite12 (BC.whisker_exchange θ.unop12 η.unop12)
+  id_whiskerLeft η := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc];exact BC.whiskerRight_id η.unop12)
+  whiskerLeft_id f g := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc];exact BC.id_whiskerRight g.unop12 f.unop12)
+  whiskerLeft_comp f a b c η θ := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc];exact BC.comp_whiskerRight θ.unop12 η.unop12 f.unop12)
+  comp_whiskerLeft f g a b η := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc];exact BC.whiskerRight_comp η.unop12 g.unop12 f.unop12)
+  id_whiskerRight f g := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc];exact BC.whiskerLeft_id g.unop12 f.unop12)
+  comp_whiskerRight η θ f := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc];exact BC.whiskerLeft_comp f.unop12 θ.unop12 η.unop12)
+  whiskerRight_id η := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc];exact BC.id_whiskerLeft η.unop12)
+  whiskerRight_comp η f g := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc];exact BC.comp_whiskerLeft g.unop12 f.unop12 η.unop12)
+  whisker_assoc f _ _ η g := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc,isoOpposite12];apply BC.whisker_assoc_symm g.unop12 η.unop12 f.unop12)
+  pentagon f g h i := eqOpposite12 (by simp only [CategoryStruct.comp,Category.assoc,isoOpposite12,Iso.symm_inv, Iso.symm_hom, pentagon])
+  triangle {a b c} f g := eqOpposite12 (by apply triangle_assoc_comp_right_inv)
 
 end CategoryTheory

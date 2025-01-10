@@ -10,50 +10,146 @@ open CategoryTheory
 
 namespace Guardedlean
 
+def Hyperdoctrine.precompose_map₂_id
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+ (F: U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ : Hyperdoctrine.HypNat (NatTrans.id F)
+  = NatTrans.id (@HypFun C _ u _ _ _ _ _ _ F _)
+ := by
+   apply NatTrans.ext
+   funext P
+   apply NatTrans.ext
+   funext X
+   simp only [category, NatTrans.vcomp_eq_comp, Functor.comp_obj, HypNat, precompose_map₂,
+     whiskerRight_twice, whiskerRight_app, Functor.op_obj, NatTrans.op_app, NatTrans.id_app', op_id,
+     Functor.comp_map, CategoryTheory.Functor.map_id, NatTrans.id_app]
+   simp only [CategoryStruct.id, HypFun, precompose, Functor.comp_obj, Functor.op_obj]
+
+def Hyperdoctrine.precompose_map₂_comp
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+ {F G H: U ⥤ T} [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ [pbH:PreservesChosenLimitsOfShape Limits.WalkingCospan H]
+ (η : NatTrans F G) (θ : NatTrans G H)
+ : Hyperdoctrine.HypNat (NatTrans.vcomp η θ)
+  = NatTrans.vcomp (Hyperdoctrine.HypNat θ) (@Hyperdoctrine.HypNat C _ u _ _ _ _ _ _ _ _ _ _ η)
+ := by
+   apply NatTrans.ext
+   funext P
+   apply NatTrans.ext
+   funext X
+   simp only [category, NatTrans.vcomp_eq_comp, Functor.comp_obj, HypNat, precompose_map₂,
+     whiskerRight_twice, whiskerRight_app, Functor.op_obj, NatTrans.op_app, NatTrans.comp_app,
+     op_comp, Functor.comp_map, Functor.map_comp]
+
+def Hyperdoctrine.precompose_map₂_whisker_left
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+ {V : Type u₅} [Category.{v₅} V] [Limits.HasFiniteLimits V]
+ (F : U ⥤ T) {G H: T ⥤ V} [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ [pbH:PreservesChosenLimitsOfShape Limits.WalkingCospan H]
+ (η : NatTrans G H)
+ : HypNat (whiskerLeft F η) = whiskerRight (HypNat η) (@HypFun C _ u _ _ _ _ _ _ F _)
+  := by
+   apply NatTrans.ext
+   funext P
+   apply NatTrans.ext
+   funext X
+   simp only [category, NatTrans.vcomp_eq_comp, HypFun, precompose_map, Functor.comp_obj, HypNat,
+     precompose_map₂, whiskerRight_twice, whiskerRight_app, Functor.op_obj, NatTrans.op_app,
+     whiskerLeft_app, Functor.comp_map]
+def Hyperdoctrine.precompose_map₂_whisker_right
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+ {V : Type u₅} [Category.{v₅} V] [Limits.HasFiniteLimits V]
+ {F G : U ⥤ T} (H: T ⥤ V) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ [pbH:PreservesChosenLimitsOfShape Limits.WalkingCospan H]
+ (η : NatTrans F G)
+ : HypNat (whiskerRight η H) = whiskerLeft (@HypFun C _ u _ _ _ _ _ _ H _) (HypNat η)
+  := by
+   apply NatTrans.ext
+   funext P
+   apply NatTrans.ext
+   funext X
+   simp only [category, NatTrans.vcomp_eq_comp, HypFun, precompose, Functor.comp_obj,
+     Functor.comp_map, precompose_map, Functor.op_obj, HypNat, precompose_map₂, whiskerRight_twice,
+     whiskerRight_app, NatTrans.op_app, whiskerLeft_app, Functor.op_map, Quiver.Hom.unop_op]
+
+def Hyperdoctrine.precompose_map₂_associator
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+ {V : Type u₅} [Category.{v₅} V] [Limits.HasFiniteLimits V]
+ {W : Type u₆} [Category.{v₆} W] [Limits.HasFiniteLimits W]
+ (F: U ⥤ T) (G: T ⥤ V) (H: V ⥤ W) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ [pbH:PreservesChosenLimitsOfShape Limits.WalkingCospan H]
+ : @HypNat C _ u _ _ _ _ _ _ _ _ _ _ ((Functor.associator F G H).hom) = (Functor.associator (HypFun H) (HypFun G) (HypFun F)).hom
+  := by
+   apply NatTrans.ext
+   funext P
+   apply NatTrans.ext
+   funext X
+   simp only [category, NatTrans.vcomp_eq_comp, HypFun, precompose, Functor.comp_obj,
+     Functor.comp_map, precompose_map, Functor.op_obj, HypNat, precompose_map₂, whiskerRight_twice,
+     whiskerRight_app, NatTrans.op_app, Functor.associator_hom_app, op_id,
+     CategoryTheory.Functor.map_id, NatTrans.id_app]
+
+def Hyperdoctrine.precompose_map₂_leftUnitor
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+ (F: U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ : @HypNat C _ u _ _ _ _ _ _ _ _ _ _ ((Functor.leftUnitor F).hom) = (Functor.leftUnitor (HypFun F)).hom
+ := by
+   apply NatTrans.ext
+   funext P
+   apply NatTrans.ext
+   funext X
+   simp only [category, NatTrans.vcomp_eq_comp, HypFun, precompose, precompose_map,
+     Functor.comp_obj, Functor.op_obj, Functor.id_obj, Functor.comp_map, Functor.id_map, HypNat,
+     precompose_map₂, whiskerRight_twice, whiskerRight_app, NatTrans.op_app,
+     Functor.leftUnitor_hom_app, op_id, CategoryTheory.Functor.map_id, NatTrans.id_app]
+
+def Hyperdoctrine.precompose_map₂_rightUnitor
+ {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
+ {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
+ {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
+ (F: U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ : @HypNat C _ u _ _ _ _ _ _ _ _ _ _ ((Functor.rightUnitor F).hom) = (Functor.rightUnitor (HypFun F)).hom
+ := by
+   apply NatTrans.ext
+   funext P
+   apply NatTrans.ext
+   funext X
+   simp only [category, NatTrans.vcomp_eq_comp, HypFun, precompose, precompose_map,
+     Functor.comp_obj, Functor.op_obj, Functor.id_obj, Functor.comp_map, Functor.id_map, HypNat,
+     precompose_map₂, whiskerRight_twice, whiskerRight_app, NatTrans.op_app,
+     Functor.rightUnitor_hom_app, op_id, CategoryTheory.Functor.map_id, NatTrans.id_app]
+
+-- This instance exists but is marked noncomputable
+instance finCategoryWalkingCospan : FinCategory Limits.WalkingCospan where
+  fintypeHom j j' := sorry
+
 def Hyp (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{v₂,u₂})
-   : Pseudofunctor (Opposite1 Lex.{v₃,u₃}) Cat.{v₂,u₂} where
-     obj := sorry
-     map := sorry
-     map₂ := sorry
-     mapId := sorry
-     mapComp := sorry
-
-
-def Hyp (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{v₂,u₂})
-   : Pseudofunctor (Opposite1 Lex.{v₃,u₃}) Cat.{v₂,u₂} where
-  obj T := Bundled.mk (Hyperdoctrine C u T.unop1)
-  map {T U} F := {
-    obj := λ P => HyperdoctrineFunctor C u T.unop1 U.unop1 F.unop1
-    map := sorry
-  }
-
-/-
--- TODO Hyperdoctrine is not most generic as Beck-Chevalley is asked on every pullback instead of
--- only on a specific class of them
-class CatHyperdoctrine (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat) (T : Type u₂) [Category.{v₂} T] where
-
-  F : Catᵒᵖ ⥤ Cat
-  F :
-
-  -- Adjunctions
-  leftAdj {A B : T} (f : A ⟶ B) : u.obj (P.obj ⟨A⟩) ⟶ u.obj (P.obj ⟨B⟩)
-  leftAdjunction {A B : T} (f : A ⟶ B) : CategoryTheory.Adjunction (leftAdj f) (u.map (P.map ⟨f⟩))
-  rightAdj {A B : T} (f : A ⟶ B) : u.obj (P.obj ⟨A⟩) ⟶ u.obj (P.obj ⟨B⟩)
-  rightAdjunction {A B : T} (f : A ⟶ B) : CategoryTheory.Adjunction (u.map (P.map ⟨f⟩)) (rightAdj f)
-
-  -- Beck-Chevalley property : The right/left mate of an identity from a pullback is inversible
-  -- id is casted id as k ≫ f = h ≫ g
-  leftBeckChevalley (L J K : T) (f : K ⟶ L) (g : J ⟶ L) (pb : Limits.LimitCone (Limits.cospan f g)):
-     let k := pb.cone.π.app .left;let h := pb.cone.π.app .right;
-     let id : u.map (P.map (.op f)) ≫ u.map (P.map (.op k)) ⟶ u.map (P.map (.op g)) ≫ u.map (P.map (.op h))
-        := ((Functor.comp P u).map_comp f.op k.op) ▸ ((Functor.comp P u).map_comp g.op h.op) ▸
-        cast (congrArg (fun ξ => (P ⋙ u).map (f.op ≫ k.op) ⟶ (P ⋙ u).map ξ.op) (Limits.PullbackCone.condition pb.cone)) (𝟙 ((Functor.comp P u).map (f.op ≫ k.op)))
-     IsIso ((mateEquiv (leftAdjunction f) (leftAdjunction h)).invFun id)
-
-  rightBeckChevalley (L J K : T) (f : K ⟶ L) (g : J ⟶ L) (pb : Limits.LimitCone (Limits.cospan f g)):
-     let k := pb.cone.π.app .left;let h := pb.cone.π.app .right;
-     let id : u.map (P.map (.op f)) ≫ u.map (P.map (.op k)) ⟶ u.map (P.map (.op g)) ≫ u.map (P.map (.op h))
-        := ((P ⋙ u).map_comp f.op k.op) ▸ ((P ⋙ u).map_comp g.op h.op) ▸
-        cast (congrArg (fun ξ => (P ⋙ u).map (f.op ≫ k.op) ⟶ (P ⋙ u).map ξ.op) (Limits.PullbackCone.condition pb.cone)) (𝟙 ((P ⋙ u).map (f.op ≫ k.op)))
-     IsIso ((mateEquiv (rightAdjunction g) (rightAdjunction k)).toFun id)
--/
+   : Pseudofunctor (Opposite12 Lex.{v₃,u₃}) Cat.{max u₂ v₂ u₃,max v₁ u₁ v₂ u₂ v₃ u₃} where
+     obj T := Bundled.mk (Hyperdoctrine C u T.unop12) (str:=Hyperdoctrine.category C u T.unop12)
+     map {T U} F := Hyperdoctrine.HypFun F.unop12.toFunctor (pbF := _)
+     map₂ {T U} F G η := Hyperdoctrine.HypNat η.unop12 (pbF := _) (pbG := _)
+     mapId T := Iso.refl _
+     mapComp F G := Iso.refl _
+     map₂_id {T U} F := Hyperdoctrine.precompose_map₂_id F.unop12.toFunctor
+     map₂_comp η θ := Hyperdoctrine.precompose_map₂_comp θ.unop12 η.unop12
+     map₂_whisker_left F _ _ η := Hyperdoctrine.precompose_map₂_whisker_right F.unop12.toFunctor η.unop12
+     map₂_whisker_right η H := Hyperdoctrine.precompose_map₂_whisker_left H.unop12.toFunctor η.unop12
+     map₂_associator F G H := Hyperdoctrine.precompose_map₂_associator H.unop12.toFunctor G.unop12.toFunctor F.unop12.toFunctor
+     map₂_left_unitor F := Hyperdoctrine.precompose_map₂_leftUnitor F.unop12.toFunctor
+     map₂_right_unitor F := Hyperdoctrine.precompose_map₂_rightUnitor F.unop12.toFunctor

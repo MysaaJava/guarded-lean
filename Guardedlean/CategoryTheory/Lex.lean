@@ -12,6 +12,7 @@ class LexCategory.{v,u} (C : Type u) extends Category.{v,u} C where
 
 instance (C : Type u) [LC : LexCategory.{v,u} C] : Limits.HasFiniteLimits C := LC.hasFiniteLimits
 
+@[nolint checkUnivs]
 def Lex.{v,u} := Bundled LexCategory.{v,u}
 
 instance : CoeSort Lex (Type u) :=
@@ -24,6 +25,10 @@ structure LexFunctor.{v₁,u₁,v₂,u₂} (C : Type u₁) [LC : LexCategory.{v�
    (D : Type u₂) [LD : LexCategory.{v₂} D] extends Functor C D where
    preservesFiniteLimits : PreservesChosenFiniteLimits toFunctor
 
+instance (C : Type u₁) [LC : LexCategory.{v₁} C]
+   (D : Type u₂) [LD : LexCategory.{v₂} D] (F : LexFunctor C D)
+    : PreservesChosenFiniteLimits F.toFunctor := F.preservesFiniteLimits
+
 def LexFunctor.mk'.{v₁,u₁,v₂,u₂} {C : Type u₁} [LC : LexCategory.{v₁} C]
    {D : Type u₂} [LD : LexCategory.{v₂} D] (F : C ⥤ D) [preserves : PreservesChosenFiniteLimits F]
    : LexFunctor C D
@@ -32,13 +37,13 @@ def LexFunctor.mk'.{v₁,u₁,v₂,u₂} {C : Type u₁} [LC : LexCategory.{v₁
      preservesFiniteLimits := by infer_instance
 
 abbrev LexFunctor.preserves {C : Type u} [LC : LexCategory C]
-   {D : Type} [LD : LexCategory D] (F : LexFunctor C D) {J : Type} [sJ : SmallCategory J] [fJ : FinCategory J]
+   {D : Type} [LD : LexCategory.{w} D] (F : LexFunctor.{w} C D) {J : Type} [sJ : SmallCategory J] [fJ : FinCategory J]
             {K : J ⥤ C} {c : Limits.Cone K} (l : Limits.IsLimit c) : Limits.IsLimit (F.mapCone c) :=
    F.preservesFiniteLimits.preserves l
 
 @[ext]
-lemma LexFunctor.ext {C : Type u} [LC : LexCategory C]
-   {D : Type} [LD : LexCategory D] {F G : LexFunctor C D}
+lemma LexFunctor.ext {C : Type u} [LC : LexCategory.{w} C]
+   {D : Type} [LD : LexCategory.{w} D] {F G : LexFunctor C D}
    (e : F.toFunctor = G.toFunctor): F = G := by
       cases F
       cases G
@@ -64,7 +69,7 @@ def LexFunctor.iso {C D : Lex} {F G : LexFunctor C D} (eF : F.toFunctor ≅ G.to
 
 
 def isoOfEq {C : Type u} [Category.{v} C] {X Y : C} (e : X = Y) : X ≅ Y := e ▸ Iso.refl X
-instance Lex.bicategory.{v,u} : Bicategory.{max v u, max v u 1,(max v u)+1} Lex.{v, u} where
+instance Lex.bicategory : Bicategory.{max v u,max v u 1} Lex.{v, u} where
   Hom C D := LexFunctor C D
   id C := LexFunctor.mk' (Functor.id C)
   comp F G := LexFunctor.mk' (Functor.comp F.toFunctor G.toFunctor)
