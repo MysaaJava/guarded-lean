@@ -162,7 +162,7 @@ def ToTPred.P : CategoryTheory.Functor ToTᵒᵖ HeytAlg where
     map_inf' := λ φ ψ => by constructor
     map_bot' := by constructor
     map_himp' := λ φ ψ => by {
-      simp only at *;congr;funext n y;simp;constructor
+      simp only at *;congr;funext n y;simp only [eq_iff_iff];constructor
       · intros h m e p
         rw [<-f.unop.iterRestrictF]
         apply h m e
@@ -254,7 +254,7 @@ def ToT.PullbackElementwise {L J K M : ToT} (f : K ⟶ L) (g : J ⟶ L) (h : M �
           Nat.sub_self, iterRestrictZero, kone]
     })
 
-instance : FirstOrderHyperdoctrine ToT where
+instance ToT.hyperdoctrine : FirstOrderHyperdoctrine ToT where
   P := ToTPred.P
   rightAdj {Γ Δ} f := ToTPred.ForallP f
   leftAdj {Γ Δ} f := ToTPred.ExistsP f
@@ -279,6 +279,14 @@ instance : FirstOrderHyperdoctrine ToT where
           simp only [Quiver.Hom.unop_op']
         · simp only [le_refl]
     }
+    right_triangle_components := by
+      intro Y
+      simp_all only [Functor.id_obj, Functor.comp_obj]
+      rfl
+    left_triangle_components := by
+      intro X
+      simp_all only [Functor.id_obj, Functor.comp_obj]
+      rfl
   }
   leftAdjunction {Γ Δ} f := {
     unit := {
@@ -297,6 +305,14 @@ instance : FirstOrderHyperdoctrine ToT where
         rw [<-e]
         exact p
     }
+    right_triangle_components := by
+      intro Y
+      simp_all only [Functor.id_obj, Functor.comp_obj]
+      rfl
+    left_triangle_components := by
+      intro X
+      simp_all only [Functor.id_obj, Functor.comp_obj]
+      rfl
   }
   leftBeckChevalley Γ Ξ Δ Φ f g h k e p := {
     out := by

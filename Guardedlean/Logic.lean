@@ -271,3 +271,130 @@ def HeytAsCat : HeytAlg ⥤ Cat := (forget₂ HeytAlg Preord ⋙ preordToCat)
 
 abbrev FirstOrderHyperdoctrine (T : Type u) [Category.{v} T] [Limits.HasFiniteLimits T]:=
    Hyperdoctrine HeytAlg HeytAsCat T
+
+section HypType.Hyperdoctrine
+
+def HypType.P : Type uᵒᵖ ⥤ HeytAlg where
+  obj X := ⟨X.unop → Prop,inferInstance⟩
+  map f := {
+    toFun P := λ x => P (f.unop x)
+    map_sup' := by aesop_cat
+    map_inf' := by aesop_cat
+    map_bot' := by aesop_cat
+    map_himp' := by aesop_cat
+  }
+def HypType.existsP {A B : Type u} (σ : A ⟶ B): HeytAsCat.obj (P.obj ⟨A⟩) ⟶ HeytAsCat.obj (P.obj ⟨B⟩) where
+  obj P := λ x => ∃ y, (σ y = x) ∧ P y
+  map {P Q} i := by
+    constructor
+    constructor
+    intro x
+    intro ⟨y,⟨hye,hyP⟩⟩
+    exists y
+    constructor
+    · exact hye
+    · exact i.down.down y hyP
+
+  --⟨⟨λ x => λ ⟨y,⟨hye,hyP⟩⟩ => ⟨y,⟨hye,i.down.down y hyP⟩⟩⟩⟩
+  -- XXX Declaration has free variables, i don't understand why
+
+def HypType.forallP {A B : Type u} (σ : A ⟶ B): HeytAsCat.obj (P.obj ⟨A⟩) ⟶ HeytAsCat.obj (P.obj ⟨B⟩) where
+  obj P := λ x => ∀ y, (σ y = x) → P y
+  map {P Q} i := by
+    constructor
+    constructor
+    intro x
+    intro hy
+    intro y
+    intro e
+    exact i.down.down y (hy y e)
+def HypType.OneCone {X Y Z : Type u} (f : X ⟶ Z) (g : Y ⟶ Z)
+  (x : X) (y : Y) (z : Z) (ex : f x = z) (ey : g y = z)
+  : CategoryTheory.Limits.Cone (CategoryTheory.Limits.cospan f g) where
+    pt := PUnit
+    π := {
+      app := fun
+        | .left => λ _ => x
+        | .one => λ _ => z
+        | .right => λ _ => y
+      naturality := λ {A B} => fun
+        | .term .left => by
+          funext u
+          exact Eq.symm ex
+        | .term .right => by
+          funext u
+          exact Eq.symm ey
+        | .id Z => by
+          simp only [Functor.const_obj_obj, WidePullbackShape.hom_id, Functor.const_obj_map,
+            Category.id_comp, CategoryTheory.Functor.map_id, Category.comp_id]
+      }
+def HypType.PullbackElementwise {L J K M : Type u} (f : K ⟶ L) (g : J ⟶ L) (h : M ⟶ J) (k : M ⟶ K)
+  (x : K) (y : J) (z : L) (ex : f x = z) (ey : g y = z)
+  (eq : k ≫ f = h ≫ g) (pb : Limits.IsLimit (CommutativeSquare f g h k eq)) :
+  {δ : M // k δ = x ∧ h δ = y} :=
+    let kone := HypType.OneCone f g x y z ex ey;
+    .mk ((pb.lift kone) PUnit.unit) (by {
+      constructor
+      · exact congrFun (pb.fac kone .left) PUnit.unit
+      · exact congrFun (pb.fac kone .right) PUnit.unit
+    })
+instance HypType.hyperdoctrine : FirstOrderHyperdoctrine (Type u) where
+  P := HypType.P
+  leftAdj σ := HypType.existsP σ
+  leftAdjunction σ := {
+    unit := {
+      app P := ⟨⟨λ x Px => ⟨x,⟨rfl,Px⟩⟩⟩⟩
+    }
+    counit := {
+      app P := ⟨⟨λ x Px => let ⟨y,⟨ey,Py⟩⟩ := Px; by rw [<-ey];exact Py⟩⟩
+    }
+  }
+  rightAdj σ := HypType.forallP σ
+  rightAdjunction σ := {
+    unit := {
+      app P := ⟨⟨λ x Px y ey => by rw [<-ey] at Px;exact Px⟩⟩
+    }
+    counit := {
+      app P := ⟨⟨λ x Px => Px _ rfl⟩⟩
+    }
+  }
+  leftBeckChevalley L J K M f g h k eq pb := {
+    out := by
+      constructor
+      · constructor
+        · rfl
+        · rfl
+      · constructor
+        · intro X Y f
+          constructor
+        · intro P
+          constructor
+          constructor
+          intro x p
+          obtain ⟨δ,⟨pδ,q⟩⟩ := p
+          let ⟨β,⟨βδ,βγ⟩⟩ := HypType.PullbackElementwise f g h k δ x (g x) pδ rfl eq pb
+          exists β
+          constructor
+          · exact βγ
+          · rw [<-βδ] at q
+            exact q
+  }
+  rightBeckChevalley L J K M f g h k eq pb := {
+    out := by
+      constructor
+      · constructor
+        · rfl
+        · rfl
+      · constructor
+        · intro X Y f
+          constructor
+        · intro ξ
+          constructor
+          constructor
+          intro γ ep δ pδ
+          let ⟨β,⟨βδ,βγ⟩⟩ := HypType.PullbackElementwise f g h k γ δ (g δ) (Eq.symm pδ) rfl eq pb
+          rw [<-βγ]
+          exact ep β βδ
+  }
+
+end HypType.Hyperdoctrine

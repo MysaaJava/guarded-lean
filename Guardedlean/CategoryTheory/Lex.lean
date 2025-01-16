@@ -1,5 +1,6 @@
 import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.Limits.Types
+import Mathlib.CategoryTheory.Limits.Opposites
 import Mathlib.CategoryTheory.Limits.Preserves.Finite
 import Guardedlean.CategoryTheory.PreservesChosen
 
@@ -11,6 +12,8 @@ class LexCategory.{v,u} (C : Type u) extends Category.{v,u} C where
    hasFiniteLimits : Limits.HasFiniteLimits C
 
 instance (C : Type u) [LC : LexCategory.{v,u} C] : Limits.HasFiniteLimits C := LC.hasFiniteLimits
+instance (C : Type u) [CC : Category.{v,u} C] [lC : Limits.HasFiniteLimits C] : LexCategory C where
+  hasFiniteLimits := lC
 
 @[nolint checkUnivs]
 def Lex.{v,u} := Bundled LexCategory.{v,u}
@@ -136,3 +139,8 @@ instance Lex.bicategory : Bicategory.{max v u,max v u 1} Lex.{v, u} where
     simp only [LexFunctor.mk', LexFunctor.iso]
     rw [<-Functor.triangle F.toFunctor G.toFunctor]
     rfl
+
+instance Lex.bicategory.strict : Bicategory.Strict Lex.{v, u} where
+  id_comp {C} {D} F := by cases F; rfl
+  comp_id {C} {D} F := by cases F; rfl
+  assoc := by intros; rfl

@@ -15,7 +15,7 @@ structure ToT.Hom.{u,v} (X : ToT.{u}) (Y : ToT.{v}) : Type (max u v) where
   restrictF: ∀ (n : ℕ) (x : X.set (n+1)),
     Y.restrict n (f (n+1) x) = f n (X.restrict n x)
 
-instance : Category.{u,u+1} ToT.{u} where
+instance ToT.category : Category.{u,u+1} ToT.{u} where
   Hom := ToT.Hom.{u,u}
   id X := ⟨λ _ => id,λ _ _ => by rfl⟩
   comp {X Y Z} u v := ⟨λ n x => v.f n (u.f n x),λ n x => by simp only [v.restrictF, u.restrictF]⟩
