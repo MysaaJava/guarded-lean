@@ -44,6 +44,11 @@ abbrev LexFunctor.preserves {C : Type u} [LC : LexCategory C]
             {K : J ⥤ C} {c : Limits.Cone K} (l : Limits.IsLimit c) : Limits.IsLimit (F.mapCone c) :=
    F.preservesFiniteLimits.preserves l
 
+def LexFunctor.id (C : Type u₁) [LC : LexCategory.{v₁} C]
+  : LexFunctor.{v₁,u₁,v₁,u₁} C C where
+    toFunctor := Functor.id C
+    preservesFiniteLimits := inferInstance
+
 @[ext]
 lemma LexFunctor.ext {C : Type u} [LC : LexCategory.{w} C]
    {D : Type} [LD : LexCategory.{w} D] {F G : LexFunctor C D}

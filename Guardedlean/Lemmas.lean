@@ -33,7 +33,10 @@ lemma cast_poly3 {X : Sort u} {α β : X} {φ : X → Sort v} {Y : Sort w} (f : 
     cases e
     rfl
   }
-
+lemma rectocast {α: Sort u} (θ : α → Sort v) {a b : α} (h : Eq a b) (t : θ a):
+  @Eq.rec α a (motive := λ x _ => θ x) t b h = cast (congrArg θ h) t := by
+  cases h
+  rfl
 lemma Eq.rec_symm {X : Sort u} {ξ : (x : X) → Sort w} {A B : X} (e : A = B) {x : ξ A} {y : ξ B}:
   Eq.rec (motive := λ α _ => ξ α) x e = y → x = Eq.rec (motive := λ α _ => ξ α) y (Eq.symm e) := by intro h;cases h;cases e;rfl
 
@@ -54,3 +57,14 @@ lemma compCast {α α' β γ : Sort u} (f : α → β) (g : β → γ) {e : α =
 lemma compCast2 {α β γ γ' : Sort u} (f : α → β) (g : β → γ) {e : γ = γ'}: (e ▸ g) ∘ f = e ▸ (g ∘ f) := by {cases e;rfl}
 
 lemma compDefExt {α β γ : Sort u} (f : β → γ) (g : α → β) (x : α): f (g x) = (f ∘ g) x := by simp
+
+
+-- We can do an induction on ℕ with (0,1,+)
+lemma ℕsumInduction (P : ℕ → Prop) (zero : P 0) (one : P 1) (add : ∀ a b, P a → P b → P (a+b)):
+  ∀ n, P n := by
+  intro n
+  induction n with
+  | zero => apply zero
+  | succ n₀ hr => cases n₀ with
+  | zero => apply one
+  | succ n₁ => apply add; apply hr; apply one
