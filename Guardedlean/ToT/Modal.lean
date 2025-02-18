@@ -25,7 +25,7 @@ instance : Limits.HasFiniteLimits ToT := sorry
 @[simp]
 def ToTL : Lex := ⟨ToT,⟨inferInstance⟩⟩
 @[simp]
-def SetL : Lex := ⟨ToT,⟨inferInstance⟩⟩
+def SetL : Lex := ⟨Type u,⟨inferInstance⟩⟩
 
 def ToT' : Grothendieck HypFO :=  ⟨⟨⟨ToT,⟨inferInstance⟩⟩⟩,ToT.hyperdoctrine⟩
 def Set' : Grothendieck HypFO :=  ⟨⟨⟨Type u,⟨inferInstance⟩⟩⟩,HypType.hyperdoctrine⟩
@@ -41,7 +41,7 @@ instance : PreservesChosenLimitsOfShape Limits.WalkingCospan GlobalSectionsF := 
 instance : PreservesChosenFiniteLimits GlobalSectionsF := sorry
 instance : PreservesChosenFiniteLimits ToT.ofSet := sorry
 
-def GlobalSectionsFL : LexFunctor ToT (Type u) := ⟨GlobalSectionsF,inferInstance⟩
+def GlobalSectionsFL : LexFunctor ToTL SetL := ⟨GlobalSectionsF,inferInstance⟩
 
 
 noncomputable section
@@ -92,24 +92,24 @@ inductive M0 where
 
 instance M0.quiver: Quiver M0 where
   Hom := fun
-    | .T,.T => Discrete Unit -- id_T
-    | .S,.S => Discrete Unit -- id_S
-    | .T,.S => Discrete Unit -- γ
-    | .S,.T => Discrete Empty
+    | .T,.T => Unit -- id_T
+    | .S,.S => Unit -- id_S
+    | .T,.S => Unit -- γ
+    | .S,.T => Empty
 
 @[aesop safe unfold]
-abbrev γ : M0.T ⟶ M0.S := ⟨()⟩
+abbrev γ : M0.T ⟶ M0.S := ()
 @[aesop safe unfold]
-abbrev idT : M0.T ⟶ M0.T := ⟨()⟩
+abbrev idT : M0.T ⟶ M0.T := ()
 @[aesop safe unfold]
-abbrev idS : M0.S ⟶ M0.S := ⟨()⟩
+abbrev idS : M0.S ⟶ M0.S := ()
 
-lemma test : (M0.S ⟶ M0.T) = Discrete Empty := rfl
+--lemma test : (M0.S ⟶ M0.T) = Discrete Empty := rfl
 
 attribute [aesop safe cases] Discrete
 --attribute [simp] M0.quiver
-attribute [aesop safe unfold] M0.quiver Category.toCategoryStruct instBicategoryOfBicategoryOnCategory
-  Bicategory.toCategoryStruct CategoryStruct.toQuiver Quiver.Hom BicategoryOnCategory.toCategory
+attribute [aesop safe unfold] M0.quiver Category.toCategoryStruct instBicategoryOfPosetalBicategoryOnCategory
+  Bicategory.toCategoryStruct CategoryStruct.toQuiver Quiver.Hom PosetalBicategoryOnCategory.toCategory
 
 @[aesop safe unfold]
 instance : Category M0 where
@@ -117,52 +117,55 @@ instance : Category M0 where
     | .T => idT
     | .S => idS
   comp := @fun
-    | .T,.T,.T,⟨()⟩,⟨()⟩ => idT
-    | .T,.T,.S,⟨()⟩,⟨()⟩ => γ
-    | .T,.S,.S,⟨()⟩,⟨()⟩ => γ
-    | .S,.S,.S,⟨()⟩,⟨()⟩ => idS
+    | .T,.T,.T,(),() => idT
+    | .T,.T,.S,(),() => γ
+    | .T,.S,.S,(),() => γ
+    | .S,.S,.S,(),() => idS
 
-set_option maxHeartbeats 3000000
+instance : Preorder Empty where
+  le a b := True
+  le_refl a := ⟨⟩
+  le_trans a b c _ _ := ⟨⟩
+
 set_option profiler true
 --XXX This noncomputable is needed or else, a strange error pops up
 @[aesop safe unfold]
-noncomputable instance : BicategoryOnCategory M0 where
-  homCategory := fun
-    | .T,.T => discreteCategory Unit
-    | .T,.S => discreteCategory Unit
-    | .S,.T => discreteCategory Empty
-    | .S,.S => discreteCategory Unit
-  whiskerLeft := @fun
-    | .T,.T,.T,⟨()⟩,⟨()⟩,⟨()⟩,_ => ⟨⟨rfl⟩⟩
-    | .T,.T,.S,⟨()⟩,⟨()⟩,⟨()⟩,_ => ⟨⟨rfl⟩⟩
-    | .T,.S,.S,⟨()⟩,⟨()⟩,⟨()⟩,_ => ⟨⟨rfl⟩⟩
-    | .S,.S,.S,⟨()⟩,⟨()⟩,⟨()⟩,_ => ⟨⟨rfl⟩⟩
-  whiskerRight := @fun
-    | .T,.T,.T,⟨()⟩,⟨()⟩,_,_ => ⟨⟨rfl⟩⟩
-    | .T,.T,.S,⟨()⟩,⟨()⟩,_,_ => ⟨⟨rfl⟩⟩
-    | .T,.S,.S,⟨()⟩,⟨()⟩,_,_ => ⟨⟨rfl⟩⟩
-    | .S,.S,.S,⟨()⟩,⟨()⟩,_,_ => ⟨⟨rfl⟩⟩
+noncomputable instance : PosetalBicategoryOnCategory M0 where
+  homPoset := fun
+    | .T,.T => by simp[Quiver.Hom];infer_instance
+    | .T,.S =>  by simp[Quiver.Hom];infer_instance
+    | .S,.T =>  by simp[Quiver.Hom];infer_instance
+    | .S,.S =>  by simp[Quiver.Hom];infer_instance
+  whiskerLeft := by aesop_cat
+  whiskerRight := by aesop_cat
 
+set_option maxHeartbeats 1200000
 noncomputable def modelFunctor : Pseudofunctor M0 Lex where
   obj := fun
-    | .T => ⟨ToT,inferInstance⟩
-    | .S => ⟨Type u,inferInstance⟩
+    | .T => ToTL
+    | .S => SetL
   map := @fun
-    | .T,.T,⟨()⟩ => LexFunctor.id _
-    | .T,.S,⟨()⟩ => GlobalSectionsFL
-    | .S,.S,⟨()⟩ => LexFunctor.id _
+    | .T,.T,() => LexFunctor.id _
+    | .T,.S,() => by simp;exact GlobalSectionsFL
+    | .S,.S,() => LexFunctor.id _
   map₂ := @fun
-    | .T,.T,⟨()⟩,⟨()⟩,_ => NatTrans.id _
-    | .T,.S,⟨()⟩,⟨()⟩,_ => NatTrans.id _
-    | .S,.S,⟨()⟩,⟨()⟩,_ => NatTrans.id _
+    | .T,.T,(),(),_ => NatTrans.id _
+    | .T,.S,(),(),_ => NatTrans.id _
+    | .S,.S,(),(),_ => NatTrans.id _
   mapId := fun
     | .T => eqToIso rfl
     | .S => eqToIso rfl
   mapComp := @fun
-    | .T,.T,.T,⟨()⟩,⟨()⟩ => eqToIso rfl
-    | .T,.T,.S,⟨()⟩,⟨()⟩ => eqToIso rfl
-    | .T,.S,.S,⟨()⟩,⟨()⟩ => eqToIso rfl
-    | .S,.S,.S,⟨()⟩,⟨()⟩ => eqToIso rfl
+    | .T,.T,.T,(),() => eqToIso rfl
+    | .T,.T,.S,(),() => eqToIso rfl
+    | .T,.S,.S,(),() => eqToIso rfl
+    | .S,.S,.S,(),() => eqToIso rfl
+  map₂_associator := @fun
+    | .T,.T,.T,.T,(),(),() => eqToIso rfl
+    | .T,.T,.T,.S,(),(),() => eqToIso rfl
+    | .T,.T,.S,.S,(),(),() => eqToIso rfl
+    | .T,.S,.S,.S,(),(),() => eqToIso rfl
+    | .S,.S,.S,.S,(),(),() => eqToIso rfl
 
 def fromTerminalFunctor' (X : Cat.{v,u}):
   X ≃ (⟨PUnit,inferInstance⟩ ⟶ X) where
@@ -178,8 +181,6 @@ def fromTerminalFunctor' (X : Cat.{v,u}):
       congr
       funext a b c
       exact Eq.symm (x_id .unit)
-
-.
 
 noncomputable def natrans : OplaxNatTrans (@toTerminalCategory (Opposite12 M0)).toOplax
     (Pseudofunctor.comp (Pseudofunctor.op12 modelFunctor) (Hyp HeytAlg HeytAsCat)).toOplax

@@ -89,18 +89,30 @@ instance Bicategory.opposite12 (C : Type u₁) [BC : Bicategory.{w₁,v₁} C]: 
   leftUnitor f := Iso.op (Iso.symm (BC.rightUnitor f.unop12))
   rightUnitor f := Iso.op (Iso.symm (BC.leftUnitor f.unop12))
   whisker_exchange η θ :=  congrArg Opposite.op (BC.whisker_exchange θ.unop η.unop)
-  id_whiskerLeft η := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];simp?;exact BC.whiskerRight_id η.unop)
+  id_whiskerLeft η := congrArg Opposite.op (by
+   simp only [CategoryStruct.comp,Category.assoc];simp only [Iso.op_inv,
+    Iso.symm_inv, Quiver.Hom.unop_op, op_comp, op_unop, Quiver.Hom.op_unop, unop_comp, Iso.op_hom,
+    Iso.symm_hom, Category.assoc];exact BC.whiskerRight_id η.unop)
   whiskerLeft_id f g := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];exact BC.id_whiskerRight g.unop12 f.unop12)
   whiskerLeft_comp f a b c η θ := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];exact BC.comp_whiskerRight θ.unop η.unop f.unop12)
-  comp_whiskerLeft f g a b η := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];simp?;exact BC.whiskerRight_comp η.unop g.unop12 f.unop12)
+  comp_whiskerLeft f g a b η := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];simp only [Iso.op_inv,
+    Quiver.Hom.unop_op, Quiver.Hom.unop_op', op_comp, unop_comp, Iso.op_hom, Category.assoc];exact BC.whiskerRight_comp η.unop g.unop12 f.unop12)
   id_whiskerRight f g := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];exact BC.whiskerLeft_id g.unop12 f.unop12)
   comp_whiskerRight η θ f := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];exact BC.whiskerLeft_comp f.unop12 θ.unop η.unop)
-  whiskerRight_id η := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];simp?;exact BC.id_whiskerLeft η.unop)
-  whiskerRight_comp η f g := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];simp?;exact BC.comp_whiskerLeft g.unop12 f.unop12 η.unop)
-  whisker_assoc f _ _ η g := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc,isoOpposite12];simp? [Quiver.Hom.unop12])
-  pentagon f g h i := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc,isoOpposite12,Iso.symm_inv, Iso.symm_hom, pentagon,Quiver.Hom.unop12];simp?)
+  whiskerRight_id η := congrArg Opposite.op (by
+   simp only [CategoryStruct.comp,Category.assoc];simp only [Iso.op_inv,
+    Iso.symm_inv, Quiver.Hom.unop_op, op_comp, op_unop, Quiver.Hom.op_unop, unop_comp, Iso.op_hom,
+    Iso.symm_hom, Category.assoc];exact BC.id_whiskerLeft η.unop)
+  whiskerRight_comp η f g := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc];simp only [Iso.op_hom,
+    Quiver.Hom.unop_op, Quiver.Hom.unop_op', op_comp, unop_comp, Iso.op_inv, Category.assoc];exact BC.comp_whiskerLeft g.unop12 f.unop12 η.unop)
+  whisker_assoc f _ _ η g := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc,isoOpposite12];simp only [Quiver.Hom.unop12,
+    Quiver.Hom.unop_op', Iso.op_inv, Quiver.Hom.unop_op, whisker_assoc, Iso.inv_hom_id_assoc,
+    op_comp, unop_comp, Iso.op_hom, Category.assoc, Iso.inv_hom_id, Category.comp_id])
+  pentagon f g h i := congrArg Opposite.op (by simp only [CategoryStruct.comp,Category.assoc,isoOpposite12,Iso.symm_inv, Iso.symm_hom, pentagon,Quiver.Hom.unop12];simp only [Iso.op_hom,
+    Quiver.Hom.unop_op, Quiver.Hom.unop_op', op_comp, unop_comp, Category.assoc, pentagon])
   triangle {a b c} f g := congrArg Opposite.op (by apply triangle_assoc_comp_right_inv)
 
+set_option maxHeartbeats 300000
 def Pseudofunctor.op12
   {C : Type u₁} [Bicategory.{v₁,w₁} C]
   {D : Type u₂} [Bicategory.{v₂,w₂} D]
@@ -114,43 +126,45 @@ def Pseudofunctor.op12
     Quiver.Hom.unop12.eq_1, Quiver.Hom.unop12, PrelaxFunctor.map₂_id];simp only [op_id, op_unop,
       unop_id, PrelaxFunctor.map₂_id]
   map₂_comp α β := by
-    simp? only [Bicategory.opposite12, CategoryStruct.comp, unop_op12]
-    simp? [Quiver.Hom.unop12, PrelaxFunctor.map₂_comp]
+    simp only [Bicategory.opposite12, CategoryStruct.comp, unop_op12]
+    simp only [Quiver.Hom.unop12, op_comp, op_unop, Quiver.Hom.op_unop, unop_comp,
+      PrelaxFunctor.map₂_comp, Quiver.Hom.unop_op]
   map₂_whisker_left f _ _ β := by simp only [Bicategory.opposite12, CategoryStruct.comp,
     unop_op12, isoOpposite12, Iso.symm_inv, Iso.symm_hom, op_unop12, Quiver.Hom.unop12,
-    Pseudofunctor.map₂_whisker_right, Category.assoc];simp?
+    Pseudofunctor.map₂_whisker_right, Category.assoc];simp only [Quiver.Hom.unop_op',
+      Pseudofunctor.map₂_whisker_right, op_comp, Category.assoc, Iso.op_inv, Iso.symm_inv,
+      Quiver.Hom.unop_op, unop_comp, Iso.op_hom, Iso.symm_hom]
   map₂_whisker_right α g := by simp only [Bicategory.opposite12, CategoryStruct.comp, unop_op12,
     isoOpposite12, Iso.symm_inv, Iso.symm_hom, op_unop12, Quiver.Hom.unop12,
-    Pseudofunctor.map₂_whisker_left, Category.assoc];simp?
+    Pseudofunctor.map₂_whisker_left, Category.assoc];simp only [Quiver.Hom.unop_op',
+      Pseudofunctor.map₂_whisker_left, op_comp, Category.assoc, Iso.op_inv, Iso.symm_inv,
+      Quiver.Hom.unop_op, unop_comp, Iso.op_hom, Iso.symm_hom]
   map₂_associator α g := by simp only [Bicategory.opposite12, CategoryStruct.comp, unop_op12,
     isoOpposite12, Iso.symm_inv, Iso.symm_hom, op_unop12, Quiver.Hom.unop12,
-    Pseudofunctor.map₂_associator, Category.assoc, implies_true];simp?
+    Pseudofunctor.map₂_associator, Category.assoc, implies_true];simp only [Iso.op_hom,
+      Quiver.Hom.unop_op, Pseudofunctor.map₂_associator, op_comp, Category.assoc, Iso.op_inv,
+      Iso.symm_inv, Quiver.Hom.unop_op', unop_comp, Iso.symm_hom, implies_true]
   map₂_left_unitor {X Y} f := by
     simp only [Bicategory.opposite12, opposite12CS, CategoryStruct.comp, unop_op12, isoOpposite12,
       Iso.symm_inv, Iso.symm_hom, op_unop12, Quiver.Hom.unop12.eq_1, Quiver.Hom.unop12,
-      Category.assoc];simp?
-    rw [Pseudofunctor.whiskerLeft_mapId_inv]
-    simp?
-  map₂_right_unitor {X Y} f := by
-    simp?
-    simp only [Bicategory.opposite12, opposite12CS, CategoryStruct.comp, unop_op12, isoOpposite12]
-    simp only [Iso.symm_inv, Iso.symm_hom, op_unop12, Quiver.Hom.unop12.eq_1, Quiver.Hom.unop12,
       Category.assoc]
+    simp only [Iso.op_hom, Iso.symm_hom, Quiver.Hom.unop_op, Quiver.Hom.unop_op',
+        unop_comp, Category.assoc]
+    rw [Pseudofunctor.whiskerLeft_mapId_inv]
     congr
-    have e : ∀ f g, f.unop ≫ g.unop = (f ≫ g).unop := sorry
-    rw [e]
-    --rw [F.map₂_left_unitor (unop f)]
-    rw [Quiver.Hom.op_unop]
-    apply congrArg (Opposite.unop)
+    simp only [Category.assoc, Iso.hom_inv_id, Category.comp_id, Iso.inv_hom_id_assoc]
+  map₂_right_unitor {X Y} f := by
+    unfold Bicategory.opposite12
+    simp only
+    unfold opposite12CS
+    simp only [CategoryStruct.comp, unop_op12, isoOpposite12,
+      Iso.symm_inv, Iso.symm_hom, op_unop12, Quiver.Hom.unop12.eq_1, Quiver.Hom.unop12,
+      Category.assoc]
+    simp only [Iso.op_hom, Iso.symm_hom, Quiver.Hom.unop_op, Quiver.Hom.unop_op',
+        unop_comp, Category.assoc]
+    congr
     rw [Pseudofunctor.whiskerRight_mapId_inv]
-    rw [<-Category.assoc
-          (Bicategory.leftUnitor (F.map (Opposite12.unop12 f))).inv
-          _
-          (F.mapComp (𝟙 (Opposite12.unop12 Y)) (Opposite12.unop12 f)).inv]
-    rw [Iso.inv_hom_id_assoc]
-    rw [Category.assoc]
-    rw [(F.mapComp (𝟙 (Opposite12.unop12 Y)) (Opposite12.unop12 f)).hom_inv_id]
-    simp only [Category.comp_id]
+    simp only [Category.assoc, Iso.hom_inv_id, Category.comp_id, Iso.inv_hom_id_assoc]
 
 @[simp]
 def Pseudofunctor.op12_id
@@ -159,4 +173,3 @@ def Pseudofunctor.op12_id
     unfold Pseudofunctor.op12
     unfold Pseudofunctor.id
     congr
-end CategoryTheory

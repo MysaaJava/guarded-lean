@@ -8,6 +8,7 @@ import Mathlib.CategoryTheory.ChosenFiniteProducts
 import Mathlib.CategoryTheory.Closed.Cartesian
 import Mathlib.CategoryTheory.Limits.Shapes.FiniteProducts
 import Mathlib.CategoryTheory.Limits.Shapes.Terminal
+import Mathlib.CategoryTheory.Bicategory.Functor.Pseudofunctor
 import Guardedlean.Lemmas
 
 open CategoryTheory
@@ -193,3 +194,82 @@ instance (C : Type u)
   : Bicategory.Strict C where
 
 end BicategoryOnCategory
+
+section PosetalBicategoryOnCategory
+class PosetalBicategoryOnCategory (C : Type u) extends Category C where
+  homPoset (A B : C) : Preorder (A ⟶ B)
+  whiskerLeft {a b c : C} (f : a ⟶ b) {g h : b ⟶ c} (η : g ≤ h) : (f ≫ g) ≤ (f ≫ h)
+  whiskerRight {a b c : C} {f g : a ⟶ b} (η : f ≤ g) (h : b ⟶ c) : (f ≫ h) ≤ (g ≫ h)
+
+instance (C : Type u) [pboc : PosetalBicategoryOnCategory C]: Bicategory C where
+  toCategoryStruct := pboc.toCategoryStruct
+  homCategory A B := (pboc.homPoset A B).smallCategory
+  whiskerLeft f g h η := ⟨⟨pboc.whiskerLeft f η.down.down⟩⟩
+  whiskerRight η h := ⟨⟨pboc.whiskerRight η.down.down h⟩⟩
+  associator f g h := @eqToIso _ (pboc.homPoset _ _).smallCategory _ _ (pboc.assoc f g h)
+  leftUnitor f := @eqToIso _ (pboc.homPoset _ _).smallCategory _ _ (pboc.id_comp f)
+  rightUnitor f := @eqToIso _ (pboc.homPoset _ _).smallCategory _ _ (pboc.comp_id f)
+
+class PseudofunctorFromPosetalOnCategoryToStrictBicategory
+  (C : Type u) [pboc : PosetalBicategoryOnCategory C]
+  (D : Type v) [bd : Bicategory D] [bsd : Bicategory.Strict D]
+  extends Functor C D where
+  map₂ {A B : C} {f g : A ⟶ B} (e : (pboc.homPoset A B).le f g) : map f ⟶ map g
+  map₂_id {A B : C} (f : A ⟶ B) : map₂ ((pboc.homPoset A B).le_refl f) = 𝟙 (map f)
+    := by aesop_cat
+  map₂_comp {A B : C} {f g h : A ⟶ B} (e₁ : (pboc.homPoset A B).le f g)
+   (e₂ : (pboc.homPoset A B).le g h):
+   map₂ ((pboc.homPoset A B).le_trans _ _ _ e₁ e₂) = (map₂ e₁) ≫ (map₂ e₂)
+    := by aesop_cat
+  map₂_whisker_left {A B B': C} {f : A ⟶ B} {g h : B ⟶ B'}
+    (e : (pboc.homPoset B B').le g h)
+    : map₂ (pboc.whiskerLeft f e) =
+    cast (Eq.symm (congrArg (λ ξ => ξ ⟶ map (f ≫ h)) (map_comp f g))) (
+    cast (Eq.symm (congrArg (λ ξ => (map f) ≫ (map g) ⟶ ξ) (map_comp f h))) (
+    (bd.whiskerLeft (map f) (map₂ e))))
+    := by aesop_cat
+  map₂_whisker_right {A B B': C} {f g: A ⟶ B} {h : B ⟶ B'}
+    (e : (pboc.homPoset A B).le f g)
+    : map₂ (pboc.whiskerRight e h) =
+    cast (Eq.symm (congrArg (λ ξ => ξ ⟶ map (g ≫ h)) (map_comp f h))) (
+    cast (Eq.symm (congrArg (λ ξ => (map f) ≫ (map h) ⟶ ξ) (map_comp g h))) (
+    (bd.whiskerRight (map₂ e) (map h))))
+    := by aesop_cat
+
+def PosetalBicategoryOnCategory.mkPseudofunctor
+  (C : Type u) [pboc : PosetalBicategoryOnCategory C]
+  (D : Type u) [bd : Bicategory D] [bds : Bicategory.Strict D]
+  (F : PseudofunctorFromPosetalOnCategoryToStrictBicategory C D)
+  : Pseudofunctor C D where
+    obj x := F.obj x
+    map f := F.map f
+    map₂ P := F.map₂ P.down.down
+    mapId x := eqToIso (F.map_id x)
+    mapComp f g := eqToIso (F.map_comp f g)
+    map₂_id f := F.map₂_id f
+    map₂_comp f g := F.map₂_comp f g
+    map₂_whisker_left := F.map₂_whisker_left
+    map₂_whisker_right := F.map₂_whisker_right
+    map₂_associator {a b c d} f g h := by
+      rw [bds.associator_eqToIso (F.map f) (F.map g) (F.map h)]
+      simp
+      --unfold eqToHom Eq.mpr Bicategory.associator instBicategoryOfPosetalBicategoryOnCategory
+      --unfold Preorder.smallCategory
+      have e
+        := @cast_poly2 (a ⟶ d) (f ≫ (g ≫ h)) ((f ≫ g) ≫ h)
+        (λ ξ => ((f ≫ g) ≫ h) ⟶ ξ)
+        (λ ξ => (F.map ((f ≫ g) ≫ h)) ⟶ (F.map ξ))
+        (λ {ξ} η => F.map₂ η.down.down) (Eq.symm (Category.assoc f g h)) (Bicategory.associator f g h).hom
+      rw [rectocast (λ x => x)] at e
+      rw [rectocast (λ x => x)] at e
+      unfold eqToHom Eq.mpr
+      rw [rectocast (λ x => x)]
+      exact Eq.trans _ (Eq.trans e _)
+
+      rw [e]
+      have e' := cast_symm (F.map₂ _) _ (Eq.symm e)
+      simp at e
+      rw [e]
+
+
+end PosetalBicategoryOnCategory

@@ -231,8 +231,8 @@ def Hyperdoctrine.precompose_map₂
  {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
  {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
- {F G : U ⥤ T} [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
- [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ {F G : U ⥤ T} [PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ [PreservesChosenLimitsOfShape Limits.WalkingCospan G]
  (η : NatTrans F G)
  (P : Hyperdoctrine C u T)
  : Hyperdoctrine.Hom (Hyperdoctrine.precompose P G) (Hyperdoctrine.precompose P F) :=
@@ -243,8 +243,8 @@ def Hyperdoctrine.HypNat
  {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
  {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
- {F G : U ⥤ T} [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
- [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ {F G : U ⥤ T} [PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ [PreservesChosenLimitsOfShape Limits.WalkingCospan G]
  (η : NatTrans F G)
  : NatTrans (Hyperdoctrine.HypFun G) (@Hyperdoctrine.HypFun C _ u T _ _ U _ _ F _) where
     app P := Hyperdoctrine.precompose_map₂ η P

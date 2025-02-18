@@ -143,13 +143,13 @@ def Hyp (C : Type u₁) [Category.{v₁} C] (u : C ⥤ Cat.{v₂,u₂})
    : Pseudofunctor (Opposite12 Lex.{v₃,u₃}) Cat.{max u₂ v₂ u₃,max v₁ u₁ v₂ u₂ v₃ u₃} where
      obj T := Bundled.mk (Hyperdoctrine C u T.unop12) (str:=Hyperdoctrine.category C u T.unop12)
      map F := Hyperdoctrine.HypFun F.unop12.toFunctor
-     map₂ η := Hyperdoctrine.HypNat η.unop12
+     map₂ η := Hyperdoctrine.HypNat η.unop
      mapId _ := Iso.refl _
      mapComp _ _ := Iso.refl _
      map₂_id F := Hyperdoctrine.precompose_map₂_id F.unop12.toFunctor
-     map₂_comp η θ := Hyperdoctrine.precompose_map₂_comp θ.unop12 η.unop12
-     map₂_whisker_left F _ _ η := Hyperdoctrine.precompose_map₂_whisker_right F.unop12.toFunctor η.unop12
-     map₂_whisker_right η H := Hyperdoctrine.precompose_map₂_whisker_left H.unop12.toFunctor η.unop12
+     map₂_comp η θ := Hyperdoctrine.precompose_map₂_comp θ.unop η.unop
+     map₂_whisker_left F _ _ η := Hyperdoctrine.precompose_map₂_whisker_right F.unop12.toFunctor η.unop
+     map₂_whisker_right η H := Hyperdoctrine.precompose_map₂_whisker_left H.unop12.toFunctor η.unop
      map₂_associator F G H := Hyperdoctrine.precompose_map₂_associator H.unop12.toFunctor G.unop12.toFunctor F.unop12.toFunctor
      map₂_left_unitor F := Hyperdoctrine.precompose_map₂_leftUnitor F.unop12.toFunctor
      map₂_right_unitor F := Hyperdoctrine.precompose_map₂_rightUnitor F.unop12.toFunctor
