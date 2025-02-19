@@ -210,6 +210,8 @@ instance (C : Type u) [pboc : PosetalBicategoryOnCategory C]: Bicategory C where
   leftUnitor f := @eqToIso _ (pboc.homPoset _ _).smallCategory _ _ (pboc.id_comp f)
   rightUnitor f := @eqToIso _ (pboc.homPoset _ _).smallCategory _ _ (pboc.comp_id f)
 
+instance (C : Type u) [pboc : PosetalBicategoryOnCategory C] : Bicategory.Strict C where
+
 class PseudofunctorFromPosetalOnCategoryToStrictBicategory
   (C : Type u) [pboc : PosetalBicategoryOnCategory C]
   (D : Type v) [bd : Bicategory D] [bsd : Bicategory.Strict D]
@@ -236,6 +238,7 @@ class PseudofunctorFromPosetalOnCategoryToStrictBicategory
     (bd.whiskerRight (map₂ e) (map h))))
     := by aesop_cat
 
+/-
 def PosetalBicategoryOnCategory.mkPseudofunctor
   (C : Type u) [pboc : PosetalBicategoryOnCategory C]
   (D : Type u) [bd : Bicategory D] [bds : Bicategory.Strict D]
@@ -256,20 +259,98 @@ def PosetalBicategoryOnCategory.mkPseudofunctor
       --unfold eqToHom Eq.mpr Bicategory.associator instBicategoryOfPosetalBicategoryOnCategory
       --unfold Preorder.smallCategory
       have e
-        := @cast_poly2 (a ⟶ d) (f ≫ (g ≫ h)) ((f ≫ g) ≫ h)
+        := @cast_poly2 (a ⟶ d) ((f ≫ g) ≫ h) (f ≫ (g ≫ h))
         (λ ξ => ((f ≫ g) ≫ h) ⟶ ξ)
         (λ ξ => (F.map ((f ≫ g) ≫ h)) ⟶ (F.map ξ))
-        (λ {ξ} η => F.map₂ η.down.down) (Eq.symm (Category.assoc f g h)) (Bicategory.associator f g h).hom
+        (λ {ξ} η => F.map₂ η.down.down) (Category.assoc f g h) (𝟙 ((f ≫ g) ≫ h))
       rw [rectocast (λ x => x)] at e
       rw [rectocast (λ x => x)] at e
       unfold eqToHom Eq.mpr
       rw [rectocast (λ x => x)]
-      exact Eq.trans _ (Eq.trans e _)
-
       rw [e]
-      have e' := cast_symm (F.map₂ _) _ (Eq.symm e)
-      simp at e
-      rw [e]
-
+      rw [F.map₂_id]
+      simp only [Functor.map_comp, Category.assoc, congrArg_cast_hom_right, eqToHom_naturality,
+        Category.comp_id, congrArg_cast_hom_left]
+-/
 
 end PosetalBicategoryOnCategory
+
+section TwoFunctor
+open Bicategory
+
+universe w₁ w₂ w₃ v₁ v₂ v₃ u₁ u₂ u₃
+variable {B : Type u₁} [Bicategory.{w₁, v₁} B] [Bicategory.Strict B]
+variable {C : Type u₂} [Bicategory.{w₂, v₂} C] [Bicategory.Strict C]
+
+
+structure TwoFunctor (B : Type u₁) [Bicategory.{w₁,v₁} B] [Bicategory.Strict B]
+ (C : Type u₂) [Bicategory.{w₂,v₂} C] [bsd : Bicategory.Strict C]
+  extends PrelaxFunctor B C where
+  map_id (a : B) : map (𝟙 a) = 𝟙 (obj a) := by aesop_cat
+  map_comp {a b c : B} (f : a ⟶ b) (g : b ⟶ c) : map (f ≫ g) = map f ≫ map g := by aesop_cat
+  map₂_whisker_left :
+    ∀ {a b c : B} (f : a ⟶ b) {g h : b ⟶ c} (η : g ⟶ h),
+      map₂ (f ◁ η) =
+        cast (congrArg (λ ξ => ξ ⟶ (map (f ≫ h))) (Eq.symm (map_comp f g)))
+        (cast (congrArg (λ ξ => map f ≫ map g ⟶ ξ) (Eq.symm (map_comp f h)))
+         (map f ◁ map₂ η)) := by aesop_cat
+  map₂_whisker_right :
+    ∀ {a b c : B} {f g : a ⟶ b} (η : f ⟶ g) (h : b ⟶ c),
+      map₂ (η ▷ h) =
+      cast (congrArg (λ ξ => ξ ⟶ (map (g ≫ h))) (Eq.symm (map_comp f h)))
+      (cast (congrArg (λ ξ => map f ≫ map h ⟶ ξ) (Eq.symm (map_comp g h)))
+        (map₂ η ▷ map h)) := by aesop_cat
+
+initialize_simps_projections TwoFunctor (+toPrelaxFunctor, -obj, -map, -map₂)
+
+namespace TwoFunctor
+attribute [simp, reassoc, to_app] map₂_whisker_left map₂_whisker_right
+
+set_option maxHeartbeats 300000
+def toPseudofunctor (F : TwoFunctor B C) : Pseudofunctor B C where
+  obj := F.obj
+  map := F.map
+  map₂ := F.map₂
+  mapId a := eqToIso (F.map_id a)
+  mapComp f g := eqToIso (F.map_comp f g)
+
+  map₂_whisker_left {a b c} f {g h} η := by
+    simp only [map₂_whisker_left, cast_cast, eqToIso.hom, eqToIso.inv]
+    rw [conj_eqToHom_iff_heq']
+    apply cast_heq
+  map₂_whisker_right {a b c} {f g} η h := by
+    simp only [map₂_whisker_right, cast_cast, eqToIso.hom, eqToIso.inv]
+    rw [conj_eqToHom_iff_heq']
+    apply cast_heq
+  map₂_associator {a b c d} f g h := by
+    repeat rw [Strict.associator_eqToIso]
+    simp only [eqToIso.hom, eqToHom_whiskerRight, eqToIso.inv, whiskerLeft_eqToHom, eqToHom_trans]
+    unfold eqToHom Eq.mpr
+    repeat rw [rectocast (λ x => x)]
+    have e := @cast_poly2 (a ⟶ d) (f ≫ g ≫ h) ((f ≫ g) ≫ h)
+        (λ ξ => ξ ⟶ (f ≫ g ≫ h)) (λ ξ => F.map ξ ⟶ F.map (f ≫ g ≫ h))
+        (λ ξ => F.map₂ ξ) (Eq.symm (Strict.assoc f g h)) (𝟙 (f ≫ g ≫ h))
+    repeat rw [rectocast (λ x => x)] at e
+    rw [e,F.map₂_id]
+  map₂_left_unitor {a b} f := by
+    repeat rw [Strict.leftUnitor_eqToIso]
+    simp only [eqToIso.hom, eqToHom_whiskerRight, eqToHom_trans]
+    unfold eqToHom Eq.mpr
+    repeat rw [rectocast (λ x => x)]
+    have e := @cast_poly2 (a ⟶ b) f (𝟙 a ≫ f)
+        (λ ξ => ξ ⟶ f) (λ ξ => F.map ξ ⟶ F.map f)
+        (λ ξ => F.map₂ ξ) (Eq.symm (Strict.id_comp f)) (𝟙 f)
+    repeat rw [rectocast (λ x => x)] at e
+    rw [e,F.map₂_id]
+  map₂_right_unitor {a b} f := by
+    repeat rw [Strict.rightUnitor_eqToIso]
+    simp only [eqToIso.hom, whiskerLeft_eqToHom, eqToHom_trans]
+    unfold eqToHom Eq.mpr
+    repeat rw [rectocast (λ x => x)]
+    have e := @cast_poly2 (a ⟶ b) f (f ≫ 𝟙 b)
+        (λ ξ => ξ ⟶ f) (λ ξ => F.map ξ ⟶ F.map f)
+        (λ ξ => F.map₂ ξ) (Eq.symm (Strict.comp_id f)) (𝟙 f)
+    repeat rw [rectocast (λ x => x)] at e
+    rw [e,F.map₂_id]
+
+end TwoFunctor

@@ -139,8 +139,8 @@ noncomputable instance : PosetalBicategoryOnCategory M0 where
   whiskerLeft := by aesop_cat
   whiskerRight := by aesop_cat
 
-set_option maxHeartbeats 1200000
-noncomputable def modelFunctor : Pseudofunctor M0 Lex where
+set_option maxHeartbeats 400000
+noncomputable def model2Functor : TwoFunctor M0 Lex where
   obj := fun
     | .T => ToTL
     | .S => SetL
@@ -152,20 +152,16 @@ noncomputable def modelFunctor : Pseudofunctor M0 Lex where
     | .T,.T,(),(),_ => NatTrans.id _
     | .T,.S,(),(),_ => NatTrans.id _
     | .S,.S,(),(),_ => NatTrans.id _
-  mapId := fun
-    | .T => eqToIso rfl
-    | .S => eqToIso rfl
-  mapComp := @fun
-    | .T,.T,.T,(),() => eqToIso rfl
-    | .T,.T,.S,(),() => eqToIso rfl
-    | .T,.S,.S,(),() => eqToIso rfl
-    | .S,.S,.S,(),() => eqToIso rfl
-  map₂_associator := @fun
-    | .T,.T,.T,.T,(),(),() => eqToIso rfl
-    | .T,.T,.T,.S,(),(),() => eqToIso rfl
-    | .T,.T,.S,.S,(),(),() => eqToIso rfl
-    | .T,.S,.S,.S,(),(),() => eqToIso rfl
-    | .S,.S,.S,.S,(),(),() => eqToIso rfl
+  map₂_whisker_left := @fun
+    | .T,.T,.T,(),(),(),⟨⟨⟨⟩⟩⟩ => by rfl
+    | .T,.T,.S,(),(),(),⟨⟨⟨⟩⟩⟩ => by rfl
+    | .T,.S,.S,(),(),(),⟨⟨⟨⟩⟩⟩ => by rfl
+    | .S,.S,.S,(),(),(),⟨⟨⟨⟩⟩⟩ => by rfl
+  map₂_whisker_right := @fun
+    | .T,.T,.T,(),(),⟨⟨⟨⟩⟩⟩,() => by rfl
+    | .T,.T,.S,(),(),⟨⟨⟨⟩⟩⟩,() => by rfl
+    | .T,.S,.S,(),(),⟨⟨⟨⟩⟩⟩,() => by rfl
+    | .S,.S,.S,(),(),⟨⟨⟨⟩⟩⟩,() => by rfl
 
 def fromTerminalFunctor' (X : Cat.{v,u}):
   X ≃ (⟨PUnit,inferInstance⟩ ⟶ X) where
@@ -182,57 +178,74 @@ def fromTerminalFunctor' (X : Cat.{v,u}):
       funext a b c
       exact Eq.symm (x_id .unit)
 
+lemma fromTerminalFunctorComp {X : Cat.{v,u}} {Y : Cat.{v,u}} (F : X ⟶ Y) (x : X):
+  ((fromTerminalFunctor' X) x) ≫ F = (fromTerminalFunctor' Y) (F.obj x) := by
+   obtain ⟨⟨Fo,Fm⟩,Fi,Fc⟩ := F
+   simp [fromTerminalFunctor',CategoryStruct.comp,Functor.comp]
+   congr
+   funext a b f
+   apply Fi
+
+def fromTerminalNatTrans {X : Cat.{v,u}} (x y : X):
+  (x ⟶ y) ≃ ((fromTerminalFunctor' X) x ⟶ (fromTerminalFunctor' X) y) where
+    toFun f := {
+      app := fun .unit => f
+      naturality := @fun .unit .unit ⟨⟩ => by simp [fromTerminalFunctor']
+    }
+    invFun η := η.app .unit
+    left_inv := by aesop_cat
+    right_inv := by aesop_cat
+
+-- This is Γ*
+def GlobalSectionsFLF --: (HypF.obj SetL) ⟶ (HypF.obj TotL) -- TODO: type this (universes)
+  := (HypF.map (Quiver.Hom.op GlobalSectionsFL))
+
+def GlobalSectionsRespect : ToT.hyperdoctrine ⟶ GlobalSectionsFLF.obj HypType.hyperdoctrine where
+  app := sorry
+
 noncomputable def natrans : OplaxNatTrans (@toTerminalCategory (Opposite12 M0)).toOplax
-    (Pseudofunctor.comp (Pseudofunctor.op12 modelFunctor) (Hyp HeytAlg HeytAsCat)).toOplax
+    (Pseudofunctor.comp (Pseudofunctor.op12 model2Functor.toPseudofunctor) (Hyp HeytAlg HeytAsCat)).toOplax
     where
       app := fun
         | ⟨.T⟩ => (fromTerminalFunctor' _).toFun ToT.hyperdoctrine
         | ⟨.S⟩ => (fromTerminalFunctor' _).toFun HypType.hyperdoctrine
       naturality := @fun
-        | ⟨.S⟩,⟨.S⟩,⟨⟨.unit⟩⟩ => by
-            simp?
-            simp? [fromTerminalFunctor']
-            rw [<-Cat.id_eq_id ⟨PUnit,_⟩]
-            rw [@Category.id_comp Cat _ ⟨PUnit,_⟩]
-            --have e : (modelFunctor.op12.map (Opposite12.op12 sorry)) = 𝟙 _ := sorry
-            unfold Pseudofunctor.op12 modelFunctor
-            simp?
-            have e' (X : Lex) : (X ⟶ X)ᵒᵖ¹²
-              = Quiver.Hom (Opposite12.op12 X) (Opposite12.op12 X)
-              := rfl
-            specialize e' SetL
-
-            have e : @Opposite12.op12 (SetL ⟶ SetL) (LexFunctor.id SetL) =
-              e' ▸ (@CategoryStruct.id (Opposite12 Lex) _ (Opposite12.op12 SetL))
-               := sorry
-
-
-
-
-             ▸ NatTrans.id
-            rw [e]
-            --have e2 := congrArg ((Hyp HeytAlg HeytAsCat).map) e
-            --apply cast (congrArg (λ ξ => _ ≫ (Hyp HeytAlg HeytAsCat).map ξ) e)
-            --let F : PUnit ⥤ Cat := { obj := fun x => HypType.hyperdoctrine, map := fun {X Y} x => 𝟙 HypType.hyperdoctrine, map_id := _, map_comp := _};
-            unfold Hyp
-            simp only
-            exact NatTrans.id
-        | ⟨.S⟩,⟨.T⟩,⟨⟨.unit⟩⟩ => sorry
-        | ⟨.T⟩,⟨.T⟩,⟨⟨.unit⟩⟩ => sorry
-
-#exit
-        (by
-            simp? []
+        | ⟨.S⟩,⟨.S⟩,⟨()⟩ => by
             simp only [toTerminalCategory, Pseudofunctor.toOplax_toPrelaxFunctor,
               Pseudofunctor.comp_toPrelaxFunctor, PrelaxFunctor.comp_toPrelaxFunctorStruct,
-              PrelaxFunctorStruct.comp_toPrefunctor, Prefunctor.comp_obj]
-
-            apply (@fromTerminalFunctor' _).toFun sorry
-            sorry
-            --simp [toTerminalCategory,modelFunctor,Cat]
-            --simp [Quiver.Hom]
-        )
-
-      naturality := sorry
+              PrelaxFunctorStruct.comp_toPrefunctor, Prefunctor.comp_obj, unop_op12,
+              Equiv.toFun_as_coe, Prefunctor.comp_map]
+            rw [(by rfl :
+              (Hyp HeytAlg HeytAsCat).map ((Pseudofunctor.op12 model2Functor.toPseudofunctor).map
+               (@Opposite.op (M0.S ⟶ M0.S) ())) = 𝟙 _)]
+            rw [<-Cat.id_eq_id ⟨PUnit,_⟩]
+            rw [@Category.id_comp Cat _ ⟨PUnit,_⟩]
+            simp only [Category.comp_id]
+            apply CategoryStruct.id
+        | ⟨.T⟩,⟨.T⟩,⟨()⟩ => by
+            simp only [toTerminalCategory, Pseudofunctor.toOplax_toPrelaxFunctor,
+              Pseudofunctor.comp_toPrelaxFunctor, PrelaxFunctor.comp_toPrelaxFunctorStruct,
+              PrelaxFunctorStruct.comp_toPrefunctor, Prefunctor.comp_obj, unop_op12,
+              Equiv.toFun_as_coe, Prefunctor.comp_map]
+            rw [(by rfl :
+              (Hyp HeytAlg HeytAsCat).map ((Pseudofunctor.op12 model2Functor.toPseudofunctor).map
+               (@Opposite.op (M0.T ⟶ M0.T) ())) = 𝟙 _)]
+            rw [<-Cat.id_eq_id ⟨PUnit,_⟩]
+            rw [@Category.id_comp Cat _ ⟨PUnit,_⟩]
+            simp only [Category.comp_id]
+            apply CategoryStruct.id
+        | ⟨.S⟩,⟨.T⟩,⟨()⟩ => by
+            simp only [toTerminalCategory, Pseudofunctor.toOplax_toPrelaxFunctor,
+              Pseudofunctor.comp_toPrelaxFunctor, PrelaxFunctor.comp_toPrelaxFunctorStruct,
+              PrelaxFunctorStruct.comp_toPrefunctor, Prefunctor.comp_obj, unop_op12,
+              Equiv.toFun_as_coe, Prefunctor.comp_map]
+            rw [(by rfl :
+              (Hyp HeytAlg HeytAsCat).map ((Pseudofunctor.op12 model2Functor.toPseudofunctor).map
+               (@Opposite.op (M0.T ⟶ M0.S) ())) = GlobalSectionsFLF)]
+            rw [<-Cat.id_eq_id ⟨PUnit,_⟩]
+            rw [@Category.id_comp Cat _ ⟨PUnit,_⟩]
+            rw [fromTerminalFunctorComp]
+            apply (fromTerminalNatTrans ToT.hyperdoctrine (GlobalSectionsFLF.obj HypType.hyperdoctrine)).toFun
+            exact GlobalSectionsRespect
 
 end M0
