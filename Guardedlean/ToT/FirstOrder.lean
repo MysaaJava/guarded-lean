@@ -147,8 +147,8 @@ instance (Γ : ToT) : HeytingAlgebra (ToTPred Γ) where
       · exact q
 
 def ToTPred.P : CategoryTheory.Functor ToTᵒᵖ HeytAlg where
-  obj := λ ⟨Γ⟩ => {α :=  ToTPred Γ}
-  map := λ {X Y} f => {
+  obj := λ ⟨Γ⟩ => ⟨ToTPred Γ⟩
+  map := λ {X Y} f => HeytAlg.ofHom {
     toFun := λ φ => {
       val := λ n x => φ.val n (f.unop.f n x)
       property := by {

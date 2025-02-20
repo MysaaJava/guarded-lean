@@ -275,8 +275,8 @@ abbrev FirstOrderHyperdoctrine (T : Type u) [Category.{v} T] [Limits.HasFiniteLi
 section HypType.Hyperdoctrine
 
 def HypType.P : Type uᵒᵖ ⥤ HeytAlg where
-  obj X := ⟨X.unop → Prop,inferInstance⟩
-  map f := {
+  obj X := ⟨X.unop → Prop⟩
+  map f := HeytAlg.ofHom {
     toFun P := λ x => P (f.unop x)
     map_sup' := by aesop_cat
     map_inf' := by aesop_cat
