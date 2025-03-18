@@ -4,7 +4,6 @@ import Mathlib.CategoryTheory.Limits.Preserves.Basic
 import Mathlib.CategoryTheory.Bicategory.Functor.Pseudofunctor
 import Mathlib.Order.Category.HeytAlg
 import Guardedlean.Lemmas
-import Guardedlean.CategoryTheory.PreservesChosen
 import Mathlib.CategoryTheory.Limits.Shapes.FiniteLimits
 
 open CategoryTheory
@@ -86,8 +85,8 @@ def CommutativeSquareMap {T : Type u₁} [Category.{v₁} T] {U : Type u₂} [Ca
     | some Limits.WalkingPair.right => apply Eq.rec_congrArg (cospanMapEq F f g) (λ ξ => F.obj M ⟶ ξ.obj (.right))
     | none => simp only [F.map_comp];apply Eq.rec_congrArg (cospanMapEq F f g) (λ ξ => F.obj M ⟶ ξ.obj (.none))
 
-def IsLimitLift {T : Type u₁} [Category.{v₁} T] {U : Type u₂} [Category.{v₂} U] (F : T ⥤ U)
-  [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+noncomputable def IsLimitLift {T : Type u₁} [Category.{v₁} T] {U : Type u₂} [Category.{v₂} U] (F : T ⥤ U)
+  [pbF:PreservesLimitsOfShape Limits.WalkingCospan F]
   {L J K M : T} (f : K ⟶ L) (g : J ⟶ L) (h : M ⟶ J) (k : M ⟶ K)
   (eq : k ≫ f = h ≫ g) (p : Limits.IsLimit (CommutativeSquare f g h k eq))
   : Limits.IsLimit (CommutativeSquare (F.map f) (F.map g) (F.map h) (F.map k) (by rw [<-F.map_comp,<-F.map_comp,eq])) := by
@@ -96,7 +95,7 @@ def IsLimitLift {T : Type u₁} [Category.{v₁} T] {U : Type u₂} [Category.{v
         rw [cast_poly3 (λ {α} a => Limits.IsLimit (F := α) a) (cospanMapEq F f g)]
         congr
         apply Eq.rec_congrArg
-      · apply pbF.preservesLimit.preserves p
+      · apply Classical.choice (pbF.preservesLimit.preserves p)
 
 
 
@@ -170,7 +169,7 @@ def Hyperdoctrine.precompose
  {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T] (P : Hyperdoctrine C u T)
  {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
- (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ (F : U ⥤ T) [pbF:PreservesLimitsOfShape Limits.WalkingCospan F]
  : Hyperdoctrine C u U where
    P := F.op ⋙ P.P
    leftAdj f := P.leftAdj (F.map f)
@@ -189,7 +188,7 @@ def Hyperdoctrine.precompose_map
  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T] {P P' : Hyperdoctrine C u T}
  (η : Hyperdoctrine.Hom P P')
  {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
- (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ (F : U ⥤ T) [pbF:PreservesLimitsOfShape Limits.WalkingCospan F]
  : Hyperdoctrine.Hom (Hyperdoctrine.precompose P F) (Hyperdoctrine.precompose P' F) where
    app X := η.app (.op (F.obj X.unop))
    naturality {X Y} s := by simp only [Functor.comp_obj, Functor.comp_map]; apply η.naturality
@@ -198,7 +197,7 @@ def Hyperdoctrine.HypFun
   {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
   {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
   {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
-  (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+  (F : U ⥤ T) [pbF:PreservesLimitsOfShape Limits.WalkingCospan F]
    : Hyperdoctrine C u T ⥤ Hyperdoctrine C u U where
      obj P := Hyperdoctrine.precompose P F
      map {P P'} η := Hyperdoctrine.precompose_map η F (pbF := _)
@@ -212,8 +211,8 @@ def Hyperdoctrine.HypFun_comp
   {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
   {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
   {V : Type u₅} [Category.{v₅} V] [Limits.HasFiniteLimits V]
-  {F : T ⥤ U} [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
-  {G : U ⥤ V} [pbG:PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+  {F : T ⥤ U} [pbF:PreservesLimitsOfShape Limits.WalkingCospan F]
+  {G : U ⥤ V} [pbG:PreservesLimitsOfShape Limits.WalkingCospan G]
    : Hyperdoctrine.HypFun (Functor.comp F G) =
     Functor.comp (Hyperdoctrine.HypFun G) (@Hyperdoctrine.HypFun C _ u _ _ _ _ _ _ F _) := rfl
 
@@ -222,7 +221,7 @@ def Hyperdoctrine.precompose_mapOLD
  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T] {P Q : Hyperdoctrine C u T}
  (η : Hyperdoctrine.Hom P Q)
  {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
- (F : U ⥤ T) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan F]
+ (F : U ⥤ T) [pbF:PreservesLimitsOfShape Limits.WalkingCospan F]
  : Hyperdoctrine.Hom (Hyperdoctrine.precompose P F) (Hyperdoctrine.precompose Q F) where
    app X := η.app (.op (F.obj X.unop))
    naturality {X Y} s := by simp only [Functor.comp_obj, Functor.comp_map]; apply η.naturality
@@ -231,8 +230,8 @@ def Hyperdoctrine.precompose_map₂
  {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
  {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
- {F G : U ⥤ T} [PreservesChosenLimitsOfShape Limits.WalkingCospan F]
- [PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ {F G : U ⥤ T} [PreservesLimitsOfShape Limits.WalkingCospan F]
+ [PreservesLimitsOfShape Limits.WalkingCospan G]
  (η : NatTrans F G)
  (P : Hyperdoctrine C u T)
  : Hyperdoctrine.Hom (Hyperdoctrine.precompose P G) (Hyperdoctrine.precompose P F) :=
@@ -243,8 +242,8 @@ def Hyperdoctrine.HypNat
  {C : Type u₁} [Category.{v₁} C] {u : C ⥤ Cat.{u₂,v₂}}
  {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
  {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
- {F G : U ⥤ T} [PreservesChosenLimitsOfShape Limits.WalkingCospan F]
- [PreservesChosenLimitsOfShape Limits.WalkingCospan G]
+ {F G : U ⥤ T} [PreservesLimitsOfShape Limits.WalkingCospan F]
+ [PreservesLimitsOfShape Limits.WalkingCospan G]
  (η : NatTrans F G)
  : NatTrans (Hyperdoctrine.HypFun G) (@Hyperdoctrine.HypFun C _ u T _ _ U _ _ F _) where
     app P := Hyperdoctrine.precompose_map₂ η P

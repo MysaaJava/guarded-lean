@@ -2,9 +2,8 @@ import Mathlib.CategoryTheory.Category.Basic
 import Mathlib.CategoryTheory.Limits.Types
 import Mathlib.CategoryTheory.Limits.Opposites
 import Mathlib.CategoryTheory.Limits.Preserves.Finite
-import Guardedlean.CategoryTheory.PreservesChosen
 
-open CategoryTheory
+open CategoryTheory Limits
 
 namespace Guardedlean
 
@@ -26,23 +25,23 @@ instance str (C : Lex.{v, u}) : LexCategory.{v, u} C :=
 
 structure LexFunctor.{v₁,u₁,v₂,u₂} (C : Type u₁) [LC : LexCategory.{v₁} C]
    (D : Type u₂) [LD : LexCategory.{v₂} D] extends Functor C D where
-   preservesFiniteLimits : PreservesChosenFiniteLimits toFunctor
+   preservesFiniteLimits : PreservesFiniteLimits toFunctor
 
 instance (C : Type u₁) [LC : LexCategory.{v₁} C]
    (D : Type u₂) [LD : LexCategory.{v₂} D] (F : LexFunctor C D)
-    : PreservesChosenFiniteLimits F.toFunctor := F.preservesFiniteLimits
+    : PreservesFiniteLimits F.toFunctor := F.preservesFiniteLimits
 
 def LexFunctor.mk'.{v₁,u₁,v₂,u₂} {C : Type u₁} [LC : LexCategory.{v₁} C]
-   {D : Type u₂} [LD : LexCategory.{v₂} D] (F : C ⥤ D) [preserves : PreservesChosenFiniteLimits F]
+   {D : Type u₂} [LD : LexCategory.{v₂} D] (F : C ⥤ D) [preserves : PreservesFiniteLimits F]
    : LexFunctor C D
    where
      toFunctor := F
      preservesFiniteLimits := by infer_instance
 
-abbrev LexFunctor.preserves {C : Type u} [LC : LexCategory C]
+noncomputable abbrev LexFunctor.preserves {C : Type u} [LC : LexCategory C]
    {D : Type} [LD : LexCategory.{w} D] (F : LexFunctor.{w} C D) {J : Type} [sJ : SmallCategory J] [fJ : FinCategory J]
             {K : J ⥤ C} {c : Limits.Cone K} (l : Limits.IsLimit c) : Limits.IsLimit (F.mapCone c) :=
-   F.preservesFiniteLimits.preserves l
+   Classical.choice $ (F.preservesFiniteLimits.preservesFiniteLimits J).preservesLimit.preserves l
 
 def LexFunctor.id (C : Type u₁) [LC : LexCategory.{v₁} C]
   : LexFunctor.{v₁,u₁,v₁,u₁} C C where
@@ -57,7 +56,6 @@ lemma LexFunctor.ext {C : Type u} [LC : LexCategory.{w} C]
       cases G
       subst e
       congr
-      apply Subsingleton.allEq
 
 instance LexFunctor.category (A B : Lex.{v,u}): Category.{max v u} (LexFunctor.{v,u,v,u} A B) where
    Hom F G := NatTrans F.toFunctor G.toFunctor
@@ -77,12 +75,11 @@ def LexFunctor.iso {C D : Lex} {F G : LexFunctor C D} (eF : F.toFunctor ≅ G.to
 
 
 def isoOfEq {C : Type u} [Category.{v} C] {X Y : C} (e : X = Y) : X ≅ Y := e ▸ Iso.refl X
-instance Lex.bicategory : Bicategory.{max v u,max v u 1} Lex.{v, u} where
+instance Lex.bicategory : Bicategory.{max v u,max v u} Lex.{v, u} where
   Hom C D := LexFunctor C D
   id C := LexFunctor.mk' (Functor.id C)
   comp F G := LexFunctor.mk' (Functor.comp F.toFunctor G.toFunctor)
-      (preserves := compPreservesChosenFiniteLimits F.toFunctor (Fp := F.preservesFiniteLimits)
-                                                    G.toFunctor (Gp := G.preservesFiniteLimits))
+      (preserves := comp_preservesFiniteLimits F.toFunctor G.toFunctor)
   homCategory C D := LexFunctor.category C D
   whiskerLeft {_} {_} {_} F _ _ η := whiskerLeft F.toFunctor η
   whiskerRight {_} {_} {_} _ _ η H := whiskerRight η H.toFunctor

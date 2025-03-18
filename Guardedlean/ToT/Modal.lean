@@ -13,14 +13,18 @@ import Mathlib.CategoryTheory.Bicategory.NaturalTransformation.Oplax
 
 universe u
 
-open CategoryTheory
+open CategoryTheory Limits
 
 namespace Guardedlean
 
 abbrev HypFO := Hyp' HeytAlg HeytAsCat
 abbrev HypF := Hyp HeytAlg HeytAsCat
 
-instance : Limits.HasFiniteLimits ToT := sorry
+instance : HasBinaryProducts ToT where
+instance : HasTerminal ToT where
+instance : HasEqualizers ToT where
+
+instance : HasFiniteLimits ToT := inferInstance
 
 @[simp]
 def ToTL : Lex := ⟨ToT,⟨inferInstance⟩⟩
@@ -37,25 +41,106 @@ def GlobalSectionsF : ToT ⥤ Type u where
     val := λ n => F.f n (ξ.val n)
     property := λ n => by rw [F.restrictF,ξ.property]
   }
-instance : PreservesChosenLimitsOfShape Limits.WalkingCospan GlobalSectionsF := sorry
-instance : PreservesChosenFiniteLimits GlobalSectionsF := sorry
-instance : PreservesChosenFiniteLimits ToT.ofSet := sorry
 
-def GlobalSectionsFL : LexFunctor ToTL SetL := ⟨GlobalSectionsF,inferInstance⟩
+def GlobalSectionsOne : GlobalSectionsF.obj X ≅ (ToT.one ⟶ X) where
+  hom gX := {
+    f n _ := gX.val n
+    restrictF n _ := gX.property n
+  }
+  inv fX := {
+    val n := fX.f n ⟨()⟩
+    property n := fX.restrictF n ⟨()⟩
+  }
+
+instance : PreservesLimitsOfShape (Discrete WalkingPair) GlobalSectionsF where
+  preservesLimit {K} := {
+    preserves {c} cL := Nonempty.intro {
+      lift s x := GlobalSectionsOne.inv (cL.lift ⟨ToT.one,
+        mapPair (GlobalSectionsOne.hom (s.π.app ⟨.left⟩ x))
+        (GlobalSectionsOne.hom (s.π.app ⟨.right⟩ x))⟩)
+      fac s j := funext $ λ x => Subtype.ext $ funext $ λ n =>
+        let fac := cL.fac ⟨ToT.one,
+          mapPair (GlobalSectionsOne.hom (s.π.app ⟨.left⟩ x))
+          (GlobalSectionsOne.hom (s.π.app ⟨.right⟩ x))⟩
+        match j with
+        | ⟨.left⟩ => congrArg (λ ξ => (GlobalSectionsOne.inv ξ).val n) (fac ⟨.left⟩)
+        | ⟨.right⟩ => congrArg (λ ξ => (GlobalSectionsOne.inv ξ).val n) (fac ⟨.right⟩)
+      uniq s m mc := funext $ λ x => Subtype.ext $ funext $ λ n =>
+        let uniq := cL.uniq ⟨ToT.one,
+          mapPair (GlobalSectionsOne.hom (s.π.app ⟨.left⟩ x))
+          (GlobalSectionsOne.hom (s.π.app ⟨.right⟩ x))⟩
+          (GlobalSectionsOne.hom (m x)) (by
+            intro j
+            match j with
+            | ⟨.left⟩ => rw [<-congrFun (mc ⟨.left⟩) x];congr
+            | ⟨.right⟩ => rw [<-congrFun (mc ⟨.right⟩) x];congr
+          )
+        congrArg (λ ξ => (GlobalSectionsOne.inv ξ).val n) uniq
+    }
+  }
+instance : PreservesLimitsOfShape (Discrete.{0} PEmpty) GlobalSectionsF where
+  preservesLimit := {
+    preserves cL := Nonempty.intro {
+      lift _ _ := GlobalSectionsOne.inv (cL.lift ⟨ToT.one,⟨λ z => PEmpty.elim z.as,λ z => PEmpty.elim z.as⟩⟩)
+      fac _ z := PEmpty.elim z.as
+      uniq _ m _ := funext $ λ x => Subtype.ext $ funext $ λ n =>
+        let uniq := cL.uniq ⟨ToT.one,⟨λ z => PEmpty.elim z.as,λ z => PEmpty.elim z.as⟩⟩
+          (GlobalSectionsOne.hom (m x))
+          (λ z => PEmpty.elim z.as)
+        congrArg (λ ξ => (GlobalSectionsOne.inv ξ).val n) uniq
+    }
+  }
+instance : PreservesLimitsOfShape WalkingParallelPair GlobalSectionsF where
+  preservesLimit {K} := {
+    preserves {c} cL := Nonempty.intro {
+      lift s x := GlobalSectionsOne.inv (cL.lift ⟨ToT.one,
+        (diagramIsoParallelPair ((Functor.const WalkingParallelPair).obj ToT.one)).hom ≫ (
+        parallelPairHom _ _ _ _
+          (GlobalSectionsOne.hom ⟨λ n => (s.π.app .zero x).val n,λ n => (s.π.app .zero x).property n⟩)
+          (GlobalSectionsOne.hom ⟨λ n => (s.π.app .one x).val n,λ n => (s.π.app .one x).property n⟩)
+          (by have e := (s.π.naturality .left);aesop_cat)
+          (by have e := (s.π.naturality .right);aesop_cat)
+        ) ≫ (diagramIsoParallelPair K).inv⟩)
+      fac s j := funext $ λ x => Subtype.ext $ funext $ λ n =>
+        let fac := cL.fac ⟨ToT.one,
+          (diagramIsoParallelPair ((Functor.const WalkingParallelPair).obj ToT.one)).hom ≫ (
+          parallelPairHom _ _ _ _
+            (GlobalSectionsOne.hom ⟨λ n => (s.π.app .zero x).val n,λ n => (s.π.app .zero x).property n⟩)
+            (GlobalSectionsOne.hom ⟨λ n => (s.π.app .one x).val n,λ n => (s.π.app .one x).property n⟩)
+            (by have e := (s.π.naturality .left);aesop_cat)
+            (by have e := (s.π.naturality .right);aesop_cat)
+          ) ≫ (diagramIsoParallelPair K).inv⟩
+        match j with
+        | .zero => congrArg (λ ξ => (GlobalSectionsOne.inv ξ).val n) (fac .zero)
+        | .one => congrArg (λ ξ => (GlobalSectionsOne.inv ξ).val n) (fac .one)
+      uniq s m mc := funext $ λ x => Subtype.ext $ funext $ λ n =>
+        let uniq := cL.uniq ⟨ToT.one,
+          (diagramIsoParallelPair ((Functor.const WalkingParallelPair).obj ToT.one)).hom ≫ (
+          parallelPairHom _ _ _ _
+            (GlobalSectionsOne.hom ⟨λ n => (s.π.app .zero x).val n,λ n => (s.π.app .zero x).property n⟩)
+            (GlobalSectionsOne.hom ⟨λ n => (s.π.app .one x).val n,λ n => (s.π.app .one x).property n⟩)
+            (by have e := (s.π.naturality .left);aesop_cat)
+            (by have e := (s.π.naturality .right);aesop_cat)
+          ) ≫ (diagramIsoParallelPair K).inv⟩
+          (GlobalSectionsOne.hom (m x)) (by
+            intro j
+            match j with
+            | .zero => simp;rw [<-congrFun (mc .zero) x];congr
+            | .one => simp;rw [<-congrFun (mc .one) x];congr
+          )
+        congrArg (λ ξ => (GlobalSectionsOne.inv ξ).val n) uniq
+    }
+  }
+instance : PreservesFiniteProducts GlobalSectionsF where
+  preserves n := preservesShape_fin_of_preserves_binary_and_terminal GlobalSectionsF n
+instance GlobalSectionsPreserves : PreservesFiniteLimits GlobalSectionsF :=
+ preservesFiniteLimits_of_preservesEqualizers_and_finiteProducts GlobalSectionsF
+
+def GlobalSectionsFL : LexFunctor ToTL SetL := ⟨GlobalSectionsF,GlobalSectionsPreserves⟩
 
 
 noncomputable section
 -- Δ := ToT.ofSet
-
-def GlobalSectionsRight
-  : DependentRightAdjoint ToT.hyperdoctrine HypType.hyperdoctrine ToT.ofSet
-  where
-    R := {
-      app X := sorry
-      naturality := sorry
-    }
-    preservesUnit := sorry
-    preservesTruth := sorry
 
 instance : Category.{v₂, u₂} PUnit.{u₂ + 1} where
   Hom _ _ := PUnit
@@ -127,8 +212,7 @@ instance : Preorder Empty where
   le_refl a := ⟨⟩
   le_trans a b c _ _ := ⟨⟩
 
-set_option profiler true
---XXX This noncomputable is needed or else, a strange error pops up
+--set_option profiler true
 @[aesop safe unfold]
 noncomputable instance : PosetalBicategoryOnCategory M0 where
   homPoset := fun
@@ -200,8 +284,27 @@ def fromTerminalNatTrans {X : Cat.{v,u}} (x y : X):
 def GlobalSectionsFLF --: (HypF.obj SetL) ⟶ (HypF.obj TotL) -- TODO: type this (universes)
   := (HypF.map (Quiver.Hom.op GlobalSectionsFL))
 
+def Cat.homext {A B : Cat} {F G : A ⟶ B} (eq : ∀ x : A, F.obj x = G.obj x)
+  (eqM : ∀ x y : A, ∀ f : x ⟶ y, F.map f = eq x ▸ eq y ▸ G.map f):
+  (F = G) := by
+    obtain ⟨⟨Fo,Fm⟩,_,_⟩ := F
+    obtain ⟨⟨Go,Gm⟩,_,_⟩ := G
+    cases show Fo = Go by funext x; exact eq x
+    congr
+    funext x y f
+    exact eqM x y f
+
 def GlobalSectionsRespect : ToT.hyperdoctrine ⟶ GlobalSectionsFLF.obj HypType.hyperdoctrine where
-  app := sorry
+  app X := {
+    obj (φ : ToTPred (X.unop)) := λ x => ∀ n, φ.val n (x.val n)
+    map {φ ψ : ToTPred (X.unop)} η := .up $ .up $ λ φp x n => η.down.down n (φp.val n) (x n)
+  }
+  naturality {X Y} f := by
+    apply Cat.homext
+    · intro x y f'
+      rfl
+    · intro x
+      rfl
 
 noncomputable def natrans : OplaxNatTrans (@toTerminalCategory (Opposite12 M0)).toOplax
     (Pseudofunctor.comp (Pseudofunctor.op12 model2Functor.toPseudofunctor) (Hyp HeytAlg HeytAsCat)).toOplax

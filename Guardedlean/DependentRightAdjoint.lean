@@ -5,7 +5,7 @@ import Guardedlean.CategoryTheory.Lex
 import Guardedlean.CatHyp
 import Guardedlean.Logic
 
-open CategoryTheory
+open CategoryTheory Limits
 
 namespace Guardedlean
 
@@ -20,7 +20,7 @@ structure DependentRightAdjoint
   {U : Type u₄} [Category.{v₄} U] [Limits.HasFiniteLimits U]
   {T : Type u₃} [Category.{v₃} T] [Limits.HasFiniteLimits T]
   (P : FirstOrderHyperdoctrine U) (Q : FirstOrderHyperdoctrine T)
-  (L: T ⥤ U) [pbF:PreservesChosenLimitsOfShape Limits.WalkingCospan L] where
+  (L: T ⥤ U) [pbF:PreservesLimitsOfShape Limits.WalkingCospan L] where
   R : NatTrans (L.op ⋙ P.P ⋙ HeytAsCat) (Q.P ⋙ HeytAsCat)
   preservesUnit : ∀ X : T, (R.app ⟨X⟩).obj (((L.op ⋙ P.P).obj ⟨X⟩).str.top) = (Q.P.obj ⟨X⟩).str.top
   preservesTruth (X : T) (x : ((L.op ⋙ P.P ⋙ HeytAsCat).obj ⟨X⟩).α) :
